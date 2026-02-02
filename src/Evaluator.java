@@ -13,5 +13,13 @@ public class Evaluator extends User{
     public void setComments(String c){comments = c;}
     public String getComments(){return comments;}
     //implementation unfinished
-    public String verifyRubrics(){return "";}
+    public String verifyRubrics(){
+        //if rubric >=1 and <= 5 then true else false
+        //return true or false
+        for (int marks : rubrics){
+            if (marks >= 1 && marks <= 5){return "Rubrics valid";}
+            else {return "Rubrics invalid";}
+        }
+        return "";
+    }
 }
