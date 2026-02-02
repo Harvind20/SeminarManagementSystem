@@ -1,7 +1,8 @@
 import java.awt.*;
 import javax.swing.*;
 public class LoginFrame extends JFrame {
-    private JTextField ID,name;
+    private JTextField ID;
+    private JPasswordField password;
     private JComboBox<String> role;
     /*private JPanel idFrame,nameFrame,roleFrame,buttonFrame;*/
     private JPanel labelPanel, fieldPanel, buttonPanel, mainPanel;
@@ -10,9 +11,10 @@ public class LoginFrame extends JFrame {
 
     public LoginFrame(){
         ID = new JTextField(16);
-        name = new JTextField(16);
+        password = new JPasswordField(16);
         role = new JComboBox<>(new String[]{"Student","Evaluator","Coordinator"});
         JButton confirmation = new JButton("Login");
+        confirmation.addActionListener(e -> verifyLogin());
         labelPanel = new JPanel(); fieldPanel = new JPanel();
         buttonPanel = new JPanel();
         mainPanel = new JPanel();
@@ -21,7 +23,7 @@ public class LoginFrame extends JFrame {
         fieldLayout = new BoxLayout(fieldPanel,BoxLayout.Y_AXIS);
 
         ID.setMaximumSize(ID.getPreferredSize());
-        name.setMaximumSize(name.getPreferredSize());
+        password.setMaximumSize(password.getPreferredSize());
         role.setMaximumSize(role.getPreferredSize());
         
         setTitle("Login");
@@ -32,10 +34,10 @@ public class LoginFrame extends JFrame {
         fieldPanel.setLayout(fieldLayout);
         buttonPanel.setLayout(new FlowLayout(1));
         labelPanel.add(new JLabel("ID:"));
-        labelPanel.add(new JLabel("Name:"));
+        labelPanel.add(new JLabel("Password:"));
         labelPanel.add(new JLabel("Login As:"));
         fieldPanel.add(ID);
-        fieldPanel.add(name);
+        fieldPanel.add(password);
         fieldPanel.add(role);
         buttonPanel.add(confirmation);
 
@@ -46,7 +48,36 @@ public class LoginFrame extends JFrame {
 
     }
 
-    public void verifyLogin(){}
+    public void verifyLogin() {
+    String id = ID.getText();
+    String pw = new String(password.getPassword());
+    String selectedRole = role.getSelectedItem().toString();
+
+    if (UserDatabase.verifyLogin(id, pw, selectedRole)) {
+        JOptionPane.showMessageDialog(this, "Login Successful");
+
+        if (selectedRole.equals("Student")) {
+            new RegistrationForm();
+        }
+
+        dispose();
+
+    } else {
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                "User not found. Register as " + selectedRole + "?",
+                "Register",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (choice == JOptionPane.YES_OPTION) {
+            UserDatabase.registerUser(id, pw, selectedRole);
+            JOptionPane.showMessageDialog(this,
+                    "Registration successful. Please login again.");
+        }
+    }
+}
+
 
     public static void main(String[] args){
         new LoginFrame();
