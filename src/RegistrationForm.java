@@ -32,6 +32,7 @@ public class RegistrationForm extends JFrame {
         submitBtn.addActionListener(e -> register());
 
         setVisible(true);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
     private void register() {
