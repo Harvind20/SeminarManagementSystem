@@ -3,11 +3,13 @@ import javax.swing.*;
 
 public class RegistrationForm extends JFrame {
 
+    private String studentId;
     JTextField idField, nameField, titleField, supervisorField;
     JTextArea abstractArea;
     JComboBox<String> typeBox;
 
     public RegistrationForm() {
+        
         setTitle("Student Registration");
         setSize(400, 450);
         setLayout(new GridLayout(7, 2));
@@ -56,7 +58,7 @@ public class RegistrationForm extends JFrame {
 }
 
     public static void main(String[] args) {
-    new RegistrationForm();
+        new RegistrationForm(); // Example student ID
 }
 
 }
