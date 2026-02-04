@@ -33,7 +33,7 @@ public class LoginFrame extends JFrame {
         labelPanel.setLayout(labelLayout);
         fieldPanel.setLayout(fieldLayout);
         buttonPanel.setLayout(new FlowLayout(1));
-        labelPanel.add(new JLabel("ID:"));
+        labelPanel.add(new JLabel("ID:"));z
         labelPanel.add(new JLabel("Password:"));
         labelPanel.add(new JLabel("Login As:"));
         fieldPanel.add(ID);
