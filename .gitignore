@@ -2,4 +2,5 @@
 /src/Lab Assignment/nbproject/private/
 students.txt
 uploads/
+*.class
 desktop.ini
