@@ -31,4 +31,9 @@ public class Student {
     public String getAbstractText() { return abstractText; }    
     public String getSupervisor() { return supervisor; }
     public String getPresentationType() { return presentationType; }
-} 
+
+    @Override
+    public String toString() {
+        return name + " (" + studentId + ")";
+    }
+}
