@@ -1,23 +1,20 @@
-public class Evaluator extends User{
-    private int[] rubrics;
-    private int marks;
-    private String comments;
+public class Evaluator { // Assuming extends User in your full project
+    private String evaluatorId;
+    private String name;
+    private String expertise; // e.g., "AI", "Cybersecurity"
 
-    public void setRubrics(int pClarity, int method, int results, int presentation){
-        rubrics[1] = pClarity; rubrics[2] = method; 
-        rubrics[3] = results; rubrics[4] = presentation;
+    public Evaluator(String evaluatorId, String name, String expertise) {
+        this.evaluatorId = evaluatorId;
+        this.name = name;
+        this.expertise = expertise;
     }
-    public int[] getRubrics(){return rubrics;}
-    public void setMarks(int m){marks = m;}
-    public int getMarks(){return marks;}
-    public void setComments(String c){comments = c;}
-    public String getComments(){return comments;}
-    //implementation unfinished
-    public String verifyRubrics(){
-        for (int marks : rubrics){
-            if (marks >= 1 && marks <= 5){return "Rubrics valid";}
-            else {return "Rubrics invalid";}
-        }
-        return "";
+
+    public String getEvaluatorId() { return evaluatorId; }
+    public String getName() { return name; }
+    public String getExpertise() { return expertise; }
+
+    @Override
+    public String toString() {
+        return name + " (" + expertise + ")";
     }
 }
