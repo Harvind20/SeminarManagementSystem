@@ -1,12 +1,15 @@
-public abstract class User{
-    private String name;
-    private String ID;
-    private String password;
+public abstract class User {
+    protected String id;
+    protected String password;
+    protected String name;
 
-    public String getName(){return name;}
-    public void setName(String n){name = n;}
-    public String getID(){return ID;}
-    public void setID(String id){ID = id;}
-    public String getPassword(){return password;}
-    public void setPassword(String pwd){password = pwd;}
+    public User(String id, String password, String name) {
+        this.id = id;
+        this.password = password;
+        this.name = name;
+    }
+
+    public String getId() { return id; }
+    public String getPassword() { return password; }
+    public String getName() { return name; }
 }

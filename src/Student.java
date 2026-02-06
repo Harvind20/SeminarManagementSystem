@@ -1,20 +1,26 @@
-public class Student {
-    private String studentId;
-    private String name;
+public class Student extends User {
     private String researchTitle;
     private String abstractText;
     private String supervisor;
     private String presentationType; 
     private String submissionPath;
 
-    public Student(String studentId, String name, String researchTitle,
-                   String abstractText, String supervisor, String presentationType) {
-        this.studentId = studentId;
-        this.name = name;
-        this.researchTitle = researchTitle;
-        this.abstractText = abstractText;
-        this.supervisor = supervisor;
-        this.presentationType = presentationType;
+    public Student(String id, String pwd, String name, String title, String abs, String sv, String type, String path) {
+        super(id, pwd, name);
+        this.researchTitle = title;
+        this.abstractText = abs;
+        this.supervisor = sv;
+        this.presentationType = type;
+        this.submissionPath = path;
+    }
+
+    public Student(String id, String name, String title, String abs, String sv, String type) {
+        super(id, "123", name); 
+        this.researchTitle = title;
+        this.abstractText = abs;
+        this.supervisor = sv;
+        this.presentationType = type;
+        this.submissionPath = "None"; 
     }
 
     public void setSubmissionPath(String submissionPath) {
@@ -25,8 +31,12 @@ public class Student {
         return submissionPath;
     }
 
-    public String getStudentId() { return studentId; }
-    public String getName() { return name; }
+    public String toFileString() {
+        return id + "|" + password + "|" + name + "|" + researchTitle + "|" + 
+               abstractText + "|" + supervisor + "|" + presentationType + "|" + submissionPath;
+    }
+
+    public String getStudentId() { return id; }
     public String getResearchTitle() { return researchTitle; }
     public String getAbstractText() { return abstractText; }    
     public String getSupervisor() { return supervisor; }
@@ -34,6 +44,6 @@ public class Student {
 
     @Override
     public String toString() {
-        return name + " (" + studentId + ")";
+        return name + " (" + id + ")";
     }
 }
