@@ -1,7 +1,7 @@
 import java.awt.*;
 import javax.swing.*;
 
-public class LoginFrame extends JDialog {
+public class LoginFrame extends JFrame {
 
     private JTextField ID;
     private JPasswordField password;

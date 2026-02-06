@@ -63,7 +63,7 @@ public class CoordinatorDashboard extends Dashboard {
         txtVenue = new JTextField("DTC Hall");
         
         cbType = new JComboBox<>(new String[]{"Oral Presentation", "Poster Presentation", "Demo Session"});
-        cbTrack = new JComboBox<>(new String[]{"AI Track", "Data Science Track", "Cybersecurity Track", "Software Eng. Track"});
+        cbTrack = new JComboBox<>(new String[]{"AI Track", "Data Science Track", "Cybersecurity Track", "Software Eng. Track", "Game Development Track"});
 
         spDate = new JSpinner(new SpinnerDateModel());
         JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(spDate, "yyyy-MM-dd");
