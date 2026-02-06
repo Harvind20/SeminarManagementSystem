@@ -2,4 +2,4 @@ E001|123|Dr. Wong Keng Tuck|AI & Data Science
 E002|123|Dr. Navaneethan|IoT & Networking
 E003|123|Mr. Khairil Amin|Cybersecurity
 E004|123|Dr. Nathar Shah|Software Engineering
-E005|123|Ms. Moganavani|Multimedia & AR/VR
+E005|123|Ms. Marfuiyah|Multimedia & AR/VR

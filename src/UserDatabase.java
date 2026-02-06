@@ -4,9 +4,9 @@ import java.util.List;
 
 public class UserDatabase {
 
-    private static final String STUDENT_FILE = "students.txt";
-    private static final String EVALUATOR_FILE = "evaluators.txt";
-    private static final String COORDINATOR_FILE = "coordinators.txt";
+    private static final String STUDENT_FILE = "./src/saved/students.txt";
+    private static final String EVALUATOR_FILE = "./src/saved/evaluators.txt";
+    private static final String COORDINATOR_FILE = "./src/saved/coordinators.txt";
 
     public static boolean verifyLogin(String id, String password, String role) {
         String filename = getFileByRole(role);

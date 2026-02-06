@@ -1,4 +1,4 @@
-S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Poster Presentation|None
+S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Oral Presentation|None
 S002|123|Sanjeevan|None|None|None|None
 S003|123|Isaiah|None|None|None|None
 S004|123|Ajjay|None|None|None|None
@@ -18,4 +18,4 @@ S017|123|Nava|None|None|None|None
 S018|123|Neethan|None|None|None|None
 S019|123|Wong|None|None|None|None
 S020|123|Goh|None|None|None|None
-S001|Harvind|Poster Presentation|C:\Users\harvi\Documents\SeminarSystem\SeminarManagementSystem\src\uploads\Lab exercise.pdf
+S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Oral Presentation|None
