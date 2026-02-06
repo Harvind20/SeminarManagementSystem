@@ -1,38 +1,39 @@
-import javax.swing.*;
 import java.awt.*;
+import javax.swing.*;
 
 public abstract class Dashboard extends JFrame {
 
     protected String userId;
-    protected JPanel mainPanel;
+    protected JPanel contentPanel; 
 
     public Dashboard(String userId, String title) {
         this.userId = userId;
 
         setTitle(title);
-        setSize(400, 300);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
 
-        mainPanel = new JPanel();
-        mainPanel.setLayout(new GridLayout(0, 1));
+        setLayout(new BorderLayout());
 
-        add(mainPanel);
+        contentPanel = new JPanel();
+        contentPanel.setLayout(new BorderLayout()); 
+        add(contentPanel, BorderLayout.CENTER);
 
-        // Let subclasses add buttons
-        buildDashboard();
-
-        // Common logout button
+        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton logoutBtn = new JButton("Logout");
+        
         logoutBtn.addActionListener(e -> {
             dispose();
-            new LoginFrame();
+            new LoginFrame().setVisible(true); 
         });
 
-        mainPanel.add(logoutBtn);
+        footerPanel.add(logoutBtn);
+        add(footerPanel, BorderLayout.SOUTH);
+
+        buildDashboard();
 
         setVisible(true);
     }
 
-    // 🔥 Abstraction point
     protected abstract void buildDashboard();
 }

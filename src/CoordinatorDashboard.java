@@ -3,41 +3,46 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 
-public class CoordinatorDashboard extends JFrame {
+public class CoordinatorDashboard extends Dashboard {
 
     private SessionManager sessionManager;
     private JTabbedPane tabbedPane;
 
     private JTable sessionsTable;
     private DefaultTableModel sessionsModel;
-    private JTextField txtId, txtName, txtDate, txtStart, txtEnd, txtDuration, txtVenue;
+    
+    private JTextField txtId, txtName, txtVenue;
     private JComboBox<String> cbType, cbTrack;
+    private JSpinner spDate, spStart, spEnd, spDuration;
 
     private JComboBox<Session> cbSessionSelector;
     private JTable scheduleTable;
     private DefaultTableModel scheduleModel;
 
-    public CoordinatorDashboard() {
+    public CoordinatorDashboard(String userId) {
+        super(userId, "Coordinator Dashboard - FCSIT Seminar System");
+        setSize(1100, 650);
+        setLocationRelativeTo(null);
+    }
+
+    @Override
+    protected void buildDashboard() {
         sessionManager = new SessionManager();
 
-        // 2. Window Setup
-        setTitle("Coordinator Dashboard - FCSIT Seminar System");
-        setSize(1100, 650);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        
-        // 3. Tab System
         tabbedPane = new JTabbedPane();
-        initSessionTab();   // Tab 1
-        initScheduleTab();  // Tab 2
+        initSessionTab();   
+        initScheduleTab();  
 
-        add(tabbedPane);
+        contentPanel.add(tabbedPane, BorderLayout.CENTER);
     }
 
     private void initSessionTab() {
@@ -55,34 +60,47 @@ public class CoordinatorDashboard extends JFrame {
 
         txtId = new JTextField();
         txtName = new JTextField();
+        txtVenue = new JTextField("DTC Hall");
+        
         cbType = new JComboBox<>(new String[]{"Oral Presentation", "Poster Presentation", "Demo Session"});
         cbTrack = new JComboBox<>(new String[]{"AI Track", "Data Science Track", "Cybersecurity Track", "Software Eng. Track"});
-        txtDate = new JTextField("2026-02-15");
-        txtVenue = new JTextField("DTC Hall");
-        txtStart = new JTextField("09:00");
-        txtEnd = new JTextField("12:00");
-        txtDuration = new JTextField("20");
+
+        spDate = new JSpinner(new SpinnerDateModel());
+        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(spDate, "yyyy-MM-dd");
+        spDate.setEditor(dateEditor);
+        spDate.setValue(new Date()); 
+
+        spStart = new JSpinner(new SpinnerDateModel());
+        JSpinner.DateEditor startEditor = new JSpinner.DateEditor(spStart, "HH:mm");
+        spStart.setEditor(startEditor);
+        setSpinnerTime(spStart, 9, 0);
+
+        spEnd = new JSpinner(new SpinnerDateModel());
+        JSpinner.DateEditor endEditor = new JSpinner.DateEditor(spEnd, "HH:mm");
+        spEnd.setEditor(endEditor);
+        setSpinnerTime(spEnd, 12, 0);
+
+        spDuration = new JSpinner(new SpinnerNumberModel(20, 5, 120, 5));
 
         addFormField(formPanel, "Session ID:", txtId, gbc);
         addFormField(formPanel, "Session Name:", txtName, gbc);
         addFormField(formPanel, "Type:", cbType, gbc);
         addFormField(formPanel, "Track:", cbTrack, gbc);
-        addFormField(formPanel, "Date (YYYY-MM-DD):", txtDate, gbc);
+        addFormField(formPanel, "Date:", spDate, gbc);
         addFormField(formPanel, "Venue:", txtVenue, gbc);
-        addFormField(formPanel, "Start Time (HH:MM):", txtStart, gbc);
-        addFormField(formPanel, "End Time (HH:MM):", txtEnd, gbc);
-        addFormField(formPanel, "Duration (Mins):", txtDuration, gbc);
+        addFormField(formPanel, "Start Time:", spStart, gbc);
+        addFormField(formPanel, "End Time:", spEnd, gbc);
+        addFormField(formPanel, "Duration (Mins):", spDuration, gbc);
 
         JButton btnCreate = new JButton("Create Session");
         btnCreate.setBackground(new Color(60, 120, 180));
         btnCreate.setForeground(Color.WHITE);
-        btnCreate.setFocusPainted(false);
-        btnCreate.setFont(new Font("SansSerif", Font.BOLD, 12));
         
         gbc.gridx = 0; gbc.gridy++; gbc.gridwidth = 2;
         gbc.insets = new Insets(15, 5, 5, 5);
         formPanel.add(btnCreate, gbc);
 
+        // RIGHT SIDE: Table
         String[] cols = {"ID", "Name", "Type", "Date", "Venue", "Time"};
         sessionsModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
@@ -90,7 +108,7 @@ public class CoordinatorDashboard extends JFrame {
         sessionsTable = new JTable(sessionsModel);
         sessionsTable.setRowHeight(25);
         
-        refreshSessionTable();
+        refreshSessionTable(); 
 
         btnCreate.addActionListener(e -> createSessionAction());
 
@@ -106,26 +124,46 @@ public class CoordinatorDashboard extends JFrame {
         gbc.gridy++;
     }
 
+    private void setSpinnerTime(JSpinner spinner, int hour, int minute) {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, hour);
+        cal.set(Calendar.MINUTE, minute);
+        cal.set(Calendar.SECOND, 0);
+        spinner.setValue(cal.getTime());
+    }
+
     private void createSessionAction() {
         try {
-            LocalDate d = LocalDate.parse(txtDate.getText());
-            LocalTime s = LocalTime.parse(txtStart.getText());
-            LocalTime e = LocalTime.parse(txtEnd.getText());
-            int dur = Integer.parseInt(txtDuration.getText());
+            Date d = (Date) spDate.getValue();
+            LocalDate localDate = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+            Date s = (Date) spStart.getValue();
+            LocalTime startTime = s.toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+
+            Date end = (Date) spEnd.getValue();
+            LocalTime endTime = end.toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+
+            int duration = (Integer) spDuration.getValue();
+
+            if (!endTime.isAfter(startTime)) {
+                JOptionPane.showMessageDialog(this, "End Time must be after Start Time!");
+                return;
+            }
 
             sessionManager.createSession(
                 txtId.getText(), txtName.getText(), cbType.getSelectedItem().toString(),
-                cbTrack.getSelectedItem().toString(), d, txtVenue.getText(), s, e, dur
+                cbTrack.getSelectedItem().toString(), localDate, txtVenue.getText(), 
+                startTime, endTime, duration
             );
 
             refreshSessionTable();
             refreshSessionSelector();
             JOptionPane.showMessageDialog(this, "Session created successfully!");
             
-            txtId.setText("");
+            txtId.setText(""); 
             
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error: Please check Date (YYYY-MM-DD) and Time (HH:MM) formats.");
+            JOptionPane.showMessageDialog(this, "Error creating session: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
@@ -148,7 +186,7 @@ public class CoordinatorDashboard extends JFrame {
         topPanel.add(new JLabel("Select Session to Schedule: "));
         
         cbSessionSelector = new JComboBox<>();
-        refreshSessionSelector(); 
+        refreshSessionSelector();
         
         JButton btnLoad = new JButton("Load Schedule");
         topPanel.add(cbSessionSelector);
@@ -156,10 +194,7 @@ public class CoordinatorDashboard extends JFrame {
 
         String[] scheduleCols = {"Time Slot", "Assigned Student", "Assigned Evaluators"};
         scheduleModel = new DefaultTableModel(scheduleCols, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 1;
-            }
+            @Override public boolean isCellEditable(int row, int column) { return column == 1; }
         };
         scheduleTable = new JTable(scheduleModel);
         scheduleTable.setRowHeight(30);
@@ -167,14 +202,12 @@ public class CoordinatorDashboard extends JFrame {
         btnLoad.addActionListener(e -> loadScheduleForSelectedSession());
 
         scheduleModel.addTableModelListener(e -> {
-            if (e.getType() == javax.swing.event.TableModelEvent.UPDATE && e.getColumn() == 1) {
+            if (e.getType() == javax.swing.event.TableModelEvent.UPDATE && e.getColumn() == 1)
                 updateStudentAssignment(e.getFirstRow());
-            }
         });
 
         scheduleTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
+            @Override public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && scheduleTable.getSelectedColumn() == 2) {
                     int row = scheduleTable.getSelectedRow();
                     if (row != -1) openMultiEvaluatorDialog(row);
@@ -184,10 +217,7 @@ public class CoordinatorDashboard extends JFrame {
 
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(scheduleTable), BorderLayout.CENTER);
-        
-        JLabel infoLabel = new JLabel("  Tip: Double-click 'Assigned Evaluators' to select multiple people.");
-        infoLabel.setForeground(Color.DARK_GRAY);
-        panel.add(infoLabel, BorderLayout.SOUTH);
+        panel.add(new JLabel("  Tip: Double-click 'Assigned Evaluators' to select multiple."), BorderLayout.SOUTH);
 
         tabbedPane.addTab("Session Schedule", panel);
     }
@@ -217,7 +247,7 @@ public class CoordinatorDashboard extends JFrame {
             scheduleModel.addRow(new Object[]{
                 slot.getTimeRange(),
                 slot.getStudent(),
-                slot.getEvaluatorNames() 
+                slot.getEvaluatorNames()
             });
         }
     }
@@ -229,7 +259,6 @@ public class CoordinatorDashboard extends JFrame {
         Object value = scheduleModel.getValueAt(row, 1);
         Student s = (value instanceof Student) ? (Student) value : null;
 
-        // Persist change using manager
         List<Evaluator> currentEvaluators = selected.getSchedule().get(row).getEvaluators();
         sessionManager.updateSlotAssignment(selected, row, s, currentEvaluators);
     }
@@ -237,20 +266,17 @@ public class CoordinatorDashboard extends JFrame {
     private void openMultiEvaluatorDialog(int row) {
         Session selected = (Session) cbSessionSelector.getSelectedItem();
         if (selected == null) return;
-
+        
         Session.PresentationSlot slot = selected.getSchedule().get(row);
-        List<Evaluator> currentlyAssigned = slot.getEvaluators();
         List<JCheckBox> checkBoxes = new ArrayList<>();
 
         JPanel panel = new JPanel(new GridLayout(0, 1));
         
         for (Evaluator ev : sessionManager.getAllEvaluators()) {
             JCheckBox box = new JCheckBox(ev.toString());
-            
-            if (currentlyAssigned.contains(ev)) {
+            if (slot.getEvaluators().contains(ev)) {
                 box.setSelected(true);
             }
-            
             box.putClientProperty("evaluatorObj", ev);
             checkBoxes.add(box);
             panel.add(box);
@@ -260,8 +286,7 @@ public class CoordinatorDashboard extends JFrame {
         scrollPane.setPreferredSize(new Dimension(300, 200));
 
         int result = JOptionPane.showConfirmDialog(this, scrollPane, 
-                "Select Evaluators for " + slot.getTimeRange(), 
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                "Select Evaluators", JOptionPane.OK_CANCEL_OPTION);
 
         if (result == JOptionPane.OK_OPTION) {
             List<Evaluator> newSelection = new ArrayList<>();
@@ -270,25 +295,8 @@ public class CoordinatorDashboard extends JFrame {
                     newSelection.add((Evaluator) box.getClientProperty("evaluatorObj"));
                 }
             }
-            
             sessionManager.updateSlotAssignment(selected, row, slot.getStudent(), newSelection);
-            
             scheduleModel.setValueAt(slot.getEvaluatorNames(), row, 2);
         }
-    }
-
-    public static void main(String[] args) {
-        try {
-            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("Nimbus not available, using default.");
-        }
-
-        SwingUtilities.invokeLater(() -> new CoordinatorDashboard().setVisible(true));
     }
 }
