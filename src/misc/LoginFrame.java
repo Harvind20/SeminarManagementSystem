@@ -1,5 +1,9 @@
+package misc;
 import java.awt.*;
 import javax.swing.*;
+
+import coordinator.CoordinatorDashboard;
+import student.StudentDashboard;
 
 public class LoginFrame extends JFrame {
 

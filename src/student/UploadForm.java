@@ -1,5 +1,9 @@
+package student;
 import java.io.File;
 import javax.swing.*;
+
+import misc.Database;
+import misc.FileHandler;
 
     public class UploadForm extends JFrame {
 

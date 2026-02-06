@@ -1,3 +1,7 @@
+package student;
+import misc.UserDatabase;
+import student.Student;
+
 public class RegistrationController {
 
     public static boolean validateInput(Student student) {
