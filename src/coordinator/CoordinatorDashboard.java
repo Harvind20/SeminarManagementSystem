@@ -1,3 +1,4 @@
+package coordinator;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -11,6 +12,11 @@ import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
+
+import coordinator.Session.PresentationSlot;
+import evaluator.Evaluator;
+import misc.Dashboard;
+import student.Student;
 
 public class CoordinatorDashboard extends Dashboard {
 

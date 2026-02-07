@@ -1,5 +1,10 @@
+package misc;
 import java.awt.*;
 import javax.swing.*;
+
+import coordinator.CoordinatorDashboard;
+import evaluator.EvaluatorDashboard;
+import student.StudentDashboard;
 
 public class LoginFrame extends JFrame {
 
@@ -72,7 +77,7 @@ public class LoginFrame extends JFrame {
                     new CoordinatorDashboard(id);
                     break;
                 case "Evaluator":
-                    JOptionPane.showMessageDialog(this, "Evaluator Dashboard under construction.");
+                    new EvaluatorDashboard(id);
                     break;
             }
 

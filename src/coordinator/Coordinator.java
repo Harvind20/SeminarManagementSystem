@@ -1,3 +1,8 @@
+package coordinator;
+import evaluator.Evaluator;
+import misc.User;
+import student.Student;
+
 public class Coordinator extends User {
 
     public Coordinator(String id, String password, String name) {

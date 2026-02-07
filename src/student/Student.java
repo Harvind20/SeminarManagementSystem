@@ -1,3 +1,6 @@
+package student;
+import misc.User;
+
 public class Student extends User {
     private String researchTitle;
     private String abstractText;

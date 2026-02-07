@@ -1,6 +1,9 @@
+package misc;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+
+import student.Student;
 
 public class Database {
 

@@ -1,3 +1,4 @@
+package evaluator;
 public class Evaluator { // Assuming extends User in your full project
     private String evaluatorId;
     private String name;

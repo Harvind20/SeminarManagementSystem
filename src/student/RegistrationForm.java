@@ -1,5 +1,8 @@
+package student;
 import java.awt.*;
 import javax.swing.*;
+
+import misc.UserDatabase;
 
 public class RegistrationForm extends JFrame {
 

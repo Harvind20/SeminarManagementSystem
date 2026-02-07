@@ -1,5 +1,8 @@
+package student;
 import java.awt.*;
 import javax.swing.*;
+
+import misc.Dashboard;
 
 public class StudentDashboard extends Dashboard {
 

@@ -1,3 +1,4 @@
+package student;
 public class Submission {
     private String studentId;
     private String filePath;

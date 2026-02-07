@@ -1,3 +1,4 @@
+package misc;
 public class Presentation{
     private String researchTitle;
     private String abstractPara;
