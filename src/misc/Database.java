@@ -18,7 +18,8 @@ public class Database {
                 student.getStudentId() + "|" +
                 student.getName() + "|" +
                 student.getPresentationType() + "|" +
-                student.getSubmissionPath();
+                student.getSubmissionPath() + "|" +
+                student.getSessionId(); // Added sessionId
 
             writer.write(record);
             writer.newLine();

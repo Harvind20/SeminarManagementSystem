@@ -33,6 +33,7 @@ public abstract class Dashboard extends JFrame {
 
         buildDashboard();
 
+        pack();
         setVisible(true);
     }
 

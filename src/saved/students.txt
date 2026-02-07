@@ -1,21 +1,20 @@
-S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Poster Presentation|None
-S002|123|Sanjeevan|None|None|None|None
-S003|123|Isaiah|None|None|None|None
-S004|123|Ajjay|None|None|None|None
-S005|123|Thassveen|None|None|None|None
-S006|123|Kashvin|None|None|None|None
-S007|123|Muthu|None|None|None|None
-S008|123|Mani|None|None|None|None
-S009|123|George|None|None|None|None
-S010|123|Felix|None|None|None|None
-S011|123|Rames|None|None|None|None
-S012|123|Lee|None|None|None|None
-S013|123|Chong|None|None|None|None
-S014|123|Wei|None|None|None|None
-S015|123|Nathar|None|None|None|None
-S016|123|Shah|None|None|None|None
-S017|123|Nava|None|None|None|None
-S018|123|Neethan|None|None|None|None
-S019|123|Wong|None|None|None|None
-S020|123|Goh|None|None|None|None
-S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Poster Presentation|None
+S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Oral Presentation|None|S5|None
+S002|123|Sanjeevan|None|None|None|None|None|None
+S003|123|Isaiah|None|None|None|None|None|None
+S004|123|Ajjay|1|1|1|Oral Presentation|None|S4|None
+S005|123|Thassveen|1|1|1|Oral Presentation|None|S4|1
+S006|123|Kashvin|None|None|None|None|None|None
+S007|123|Muthu|None|None|None|None|None|None
+S008|123|Mani|None|None|None|None|None|None
+S009|123|George|None|None|None|None|None|None
+S010|123|Felix|None|None|None|None|None|None
+S011|123|Rames|None|None|None|None|None|None
+S012|123|Lee|None|None|None|None|None|None
+S013|123|Chong|None|None|None|None|None|None
+S014|123|Wei|None|None|None|None|None|None
+S015|123|Nathar|None|None|None|None|None|None
+S016|123|Shah|None|None|None|None|None|None
+S017|123|Nava|None|None|None|None|None|None
+S018|123|Neethan|None|None|None|None|None|None
+S019|123|Wong|None|None|None|None|None|None
+S020|123|Goh|None|None|None|None|None|None
