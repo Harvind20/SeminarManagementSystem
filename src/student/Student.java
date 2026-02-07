@@ -7,6 +7,8 @@ public class Student extends User {
     private String supervisor;
     private String presentationType; 
     private String submissionPath;
+    private String sessionId;  
+    private String boardId;    // NEW: Board ID field
 
     public Student(String id, String pwd, String name, String title, String abs, String sv, String type, String path) {
         super(id, pwd, name);
@@ -15,6 +17,8 @@ public class Student extends User {
         this.supervisor = sv;
         this.presentationType = type;
         this.submissionPath = path;
+        this.sessionId = "None";
+        this.boardId = "None";
     }
 
     public Student(String id, String name, String title, String abs, String sv, String type) {
@@ -23,7 +27,9 @@ public class Student extends User {
         this.abstractText = abs;
         this.supervisor = sv;
         this.presentationType = type;
-        this.submissionPath = "None"; 
+        this.submissionPath = "None";
+        this.sessionId = "None";
+        this.boardId = "None";
     }
 
     public void setSubmissionPath(String submissionPath) {
@@ -34,9 +40,26 @@ public class Student extends User {
         return submissionPath;
     }
 
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setBoardId(String boardId) {
+        this.boardId = boardId;
+    }
+
+    public String getBoardId() {
+        return boardId;
+    }
+
     public String toFileString() {
         return id + "|" + password + "|" + name + "|" + researchTitle + "|" + 
-               abstractText + "|" + supervisor + "|" + presentationType + "|" + submissionPath;
+               abstractText + "|" + supervisor + "|" + presentationType + "|" + 
+               submissionPath + "|" + sessionId + "|" + boardId;  // Added boardId
     }
 
     public String getStudentId() { return id; }
@@ -47,6 +70,8 @@ public class Student extends User {
 
     @Override
     public String toString() {
-        return name + " (" + id + ")";
+        String sessionInfo = sessionId.equals("None") ? "" : " [Session: " + sessionId + "]";
+        String boardInfo = boardId.equals("None") ? "" : " [Board: " + boardId + "]";
+        return name + " (" + id + ")" + sessionInfo + boardInfo;
     }
 }

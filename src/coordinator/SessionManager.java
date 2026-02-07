@@ -26,6 +26,28 @@ public class SessionManager {
         loadSessions();
     }
 
+    // Method to generate unique session ID
+    public String generateSessionId() {
+        loadSessions(); // Reload to get current sessions
+        int maxId = 0;
+        
+        for (Session session : sessions) {
+            try {
+                if (session.getSessionId().startsWith("S")) {
+                    String numStr = session.getSessionId().substring(1);
+                    int idNum = Integer.parseInt(numStr);
+                    if (idNum > maxId) {
+                        maxId = idNum;
+                    }
+                }
+            } catch (NumberFormatException e) {
+                // Skip if ID format is not S followed by number
+            }
+        }
+        
+        return "S" + (maxId + 1);
+    }
+
     public Session createSession(String id, String name, String type, String track, 
                                  LocalDate date, String venue, LocalTime start, LocalTime end, int duration) {
         Session newSession = new Session(id, name, type, track, date, venue, start, end, duration);
@@ -49,6 +71,11 @@ public class SessionManager {
 
     private void loadEvaluators() {
         this.allEvaluators = UserDatabase.getAllEvaluators();
+    }
+
+    // NEW METHOD: Get students registered for a specific session
+    public List<Student> getStudentsBySession(String sessionId) {
+        return UserDatabase.getStudentsBySession(sessionId);
     }
 
     public void saveSessions() {
