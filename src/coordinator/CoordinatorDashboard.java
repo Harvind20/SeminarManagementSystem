@@ -43,7 +43,7 @@ public class CoordinatorDashboard extends Dashboard {
 
     public CoordinatorDashboard(String userId) {
         super(userId, "Coordinator Dashboard - Seminar System");
-        setSize(1300, 800); // Increased size for comments
+        setSize(1300, 800);
         setLocationRelativeTo(null);
     }
 
@@ -59,9 +59,6 @@ public class CoordinatorDashboard extends Dashboard {
         contentPanel.add(tabbedPane, BorderLayout.CENTER);
     }
 
-    // ==========================================
-    // TAB 1: MANAGE SESSIONS
-    // ==========================================
     private void initSessionTab() {
         JPanel panel = new JPanel(new BorderLayout(15, 15));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -128,7 +125,6 @@ public class CoordinatorDashboard extends Dashboard {
         sessionsTable = new JTable(sessionsModel);
         sessionsTable.setRowHeight(25);
         
-        // Thinner ID Column
         sessionsTable.getColumnModel().getColumn(0).setPreferredWidth(40);
         
         refreshSessionTable(); 
@@ -225,9 +221,6 @@ public class CoordinatorDashboard extends Dashboard {
         }
     }
 
-    // ==========================================
-    // TAB 2: SESSION SCHEDULE
-    // ==========================================
     private void initScheduleTab() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -375,9 +368,6 @@ public class CoordinatorDashboard extends Dashboard {
         }
     }
     
-    // ==========================================
-    // TAB 3: AWARD NOMINATION (UPDATED)
-    // ==========================================
     private void initAwardNominationTab() {
         awardMainPanel = new JPanel(new CardLayout());
         
@@ -448,7 +438,7 @@ public class CoordinatorDashboard extends Dashboard {
                         Evaluator ev = UserDatabase.getEvaluatorById(evalId);
                         String evalName = (ev != null) ? ev.getName() : evalId;
                         
-                        if (found) sb.append("<br><br>"); // Add vertical space for readability
+                        if (found) sb.append("<br><br>"); 
                         sb.append("<b>").append(evalName).append(":</b> ").append(comment);
                         found = true;
                     }
@@ -524,13 +514,13 @@ public class CoordinatorDashboard extends Dashboard {
         }
         
         JTable studentsTable = new JTable(studentsModel);
-        studentsTable.setRowHeight(80); // Increased for comments
+        studentsTable.setRowHeight(80); 
         
         studentsTable.getColumnModel().getColumn(0).setPreferredWidth(35);
         studentsTable.getColumnModel().getColumn(1).setPreferredWidth(50);
         studentsTable.getColumnModel().getColumn(2).setPreferredWidth(100);
         studentsTable.getColumnModel().getColumn(3).setPreferredWidth(60);
-        studentsTable.getColumnModel().getColumn(4).setPreferredWidth(450); // Wide for comments
+        studentsTable.getColumnModel().getColumn(4).setPreferredWidth(450); 
         studentsTable.getColumnModel().getColumn(5).setPreferredWidth(150);
         studentsTable.getColumnModel().getColumn(6).setPreferredWidth(90);
         
@@ -548,7 +538,6 @@ public class CoordinatorDashboard extends Dashboard {
         cl.show(awardMainPanel, "STUDENT_LIST_" + sessionId);
     }
     
-    // --- DIALOG LOGIC ---
     private void showAwardSelectionDialog(String studentId, String studentName, String sessionId, String sessionName) {
         JDialog awardDialog = new JDialog(this, "Nominate Award", true);
         awardDialog.setSize(400, 300);
@@ -609,7 +598,6 @@ public class CoordinatorDashboard extends Dashboard {
         awardDialog.setVisible(true);
     }
 
-    // --- BUTTON CLASSES ---
     class ButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
         private String txt; public ButtonRenderer(String t){this.txt=t; setOpaque(true);}
         public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c){

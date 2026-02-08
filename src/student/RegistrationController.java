@@ -15,13 +15,10 @@ public class RegistrationController {
     }
 
     public static void registerStudent(Student student) {
-        // Validate session exists before saving
         if (!UserDatabase.sessionExists(student.getSessionId())) {
             System.out.println("Error: Session " + student.getSessionId() + " does not exist.");
             return;
         }
-        
-        // Calls the database to update the text file
         UserDatabase.saveStudentRegistration(student);
     }
 }

@@ -21,8 +21,8 @@ public class RegistrationForm extends JFrame {
         }
 
         setTitle("Seminar Registration - " + currentStudent.getName());
-        setSize(450, 550); // Increased height for new field
-        setLayout(new GridLayout(8, 2, 10, 10)); // Changed to 8 rows
+        setSize(450, 550);
+        setLayout(new GridLayout(8, 2, 10, 10)); 
         setLocationRelativeTo(null);
 
         idField = new JTextField(currentStudent.getStudentId());
@@ -41,12 +41,10 @@ public class RegistrationForm extends JFrame {
         abstractArea.setLineWrap(true);
         typeBox = new JComboBox<>(new String[]{"Oral Presentation", "Poster Presentation"});
         
-        // Session selection combo box
         sessionBox = new JComboBox<>();
         loadAvailableSessions();
-        sessionBox.setEnabled(true); // Enable for selection
+        sessionBox.setEnabled(true); 
 
-        // If student already has a session, try to select it
         if (!currentStudent.getSessionId().equals("None")) {
             String currentSession = currentStudent.getSessionId();
             for (int i = 0; i < sessionBox.getItemCount(); i++) {
@@ -91,7 +89,6 @@ public class RegistrationForm extends JFrame {
     }
 
     private void register() {
-        // Get selected session
         String selectedSessionItem = (String) sessionBox.getSelectedItem();
         
         if (selectedSessionItem == null || 
@@ -101,10 +98,8 @@ public class RegistrationForm extends JFrame {
             return;
         }
         
-        // Extract session ID from the display string (format: "S1 - Session Name")
         String sessionId = selectedSessionItem.split(" - ")[0];
 
-        // Validate session exists
         if (!UserDatabase.sessionExists(sessionId)) {
             JOptionPane.showMessageDialog(this, "Selected session no longer exists. Please choose another.");
             loadAvailableSessions();
@@ -122,13 +117,11 @@ public class RegistrationForm extends JFrame {
             currentStudent.getSubmissionPath()
         );
         
-        // Set the session ID
         updatedStudent.setSessionId(sessionId);
 
         if (RegistrationController.validateInput(updatedStudent)) {
             RegistrationController.registerStudent(updatedStudent);
             
-            // Ask user if they want to upload file now
             int choice = JOptionPane.showConfirmDialog(this, 
                 "Registration Saved!\nSession: " + selectedSessionItem + 
                 "\nDo you want to upload your presentation file now?",

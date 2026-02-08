@@ -9,7 +9,6 @@ public class Database {
 
     private static final String FILE_NAME = "students.txt";
 
-    // Save student to text file
     public static void saveStudent(Student student) {
         try (BufferedWriter writer = new BufferedWriter(
                 new FileWriter(FILE_NAME, true))) {
@@ -19,7 +18,7 @@ public class Database {
                 student.getName() + "|" +
                 student.getPresentationType() + "|" +
                 student.getSubmissionPath() + "|" +
-                student.getSessionId(); // Added sessionId
+                student.getSessionId();
 
             writer.write(record);
             writer.newLine();

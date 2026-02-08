@@ -17,19 +17,16 @@ public class StudentDashboard extends Dashboard {
     private CardLayout cardLayout;
     private JPanel mainContainer;
 
-    // View Components
     private JTabbedPane tabbedPane;
     private JTable availableTable, registeredTable, gradesTable;
     private DefaultTableModel availableModel, registeredModel, gradesModel;
 
-    // Form Components
     private JPanel formPanel;
     private JTextField idField, nameField, boardIdField, sessionDisplayField, titleField;
     private JComboBox<String> abstractBox, supervisorBox, typeBox;
     private JButton uploadBtn, saveBtn, cancelBtn;
     private JLabel filePathLabel;
     
-    // Data
     private Student currentProfile;
     private List<Student> myRegistrations;
     private String uploadedFilePath;
@@ -120,7 +117,6 @@ public class StudentDashboard extends Dashboard {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Added "Feedback" column
         String[] columns = {"Session ID", "Session Name", "Total Grade", "Awards Earned", "Feedback"};
         gradesModel = new DefaultTableModel(columns, 0) {
             @Override public boolean isCellEditable(int row, int column) { return column == 4; } 
@@ -187,7 +183,6 @@ public class StudentDashboard extends Dashboard {
             double sessionGrade = 0.0;
             boolean hasGrade = false;
             try {
-                // Now works because UserDatabase has getEvaluationDetails
                 List<UserDatabase.EvaluationDetail> details = UserDatabase.getEvaluationDetails(sessionId, userId);
                 if(!details.isEmpty()) {
                     double sum = 0;
@@ -312,7 +307,6 @@ public class StudentDashboard extends Dashboard {
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout(10, 10));
 
-        // Using the new methods in UserDatabase
         List<UserDatabase.EvaluationDetail> details = UserDatabase.getEvaluationDetails(sessionId, userId);
         
         if (details.isEmpty()) {

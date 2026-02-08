@@ -6,7 +6,7 @@ public class ViewSubmissionForm extends JFrame {
 
     public ViewSubmissionForm(String studentId) {
         setTitle("My Uploaded Materials");
-        setSize(400, 250); // Increased height
+        setSize(400, 250);
 
         JTextArea area = new JTextArea();
         area.setEditable(false);

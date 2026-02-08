@@ -8,18 +8,12 @@ import java.util.*;
 import student.Student;
 
 public class UserDatabase {
-
-    // --- FILE CONSTANTS ---
     private static final String STUDENT_FILE = "./saved/students.txt";
     private static final String EVALUATOR_FILE = "./saved/evaluators.txt";
     private static final String COORDINATOR_FILE = "./saved/coordinators.txt";
     private static final String SESSIONS_FILE = "./saved/sessions.txt";
     private static final String GRADES_FILE = "./saved/evaluations.csv";
     private static final String AWARDS_FILE = "./saved/awards.txt";
-
-    // ==========================================
-    // 1. AUTHENTICATION & REGISTRATION
-    // ==========================================
 
     public static boolean verifyLogin(String id, String password, String role) {
         String filename = getFileByRole(role);
@@ -76,10 +70,6 @@ public class UserDatabase {
             default: return null;
         }
     }
-
-    // ==========================================
-    // 2. STUDENT MANAGEMENT
-    // ==========================================
 
     public static void saveStudentRegistration(Student s) {
         List<String> lines = new ArrayList<>();
@@ -249,10 +239,6 @@ public class UserDatabase {
         } catch (IOException e) {}
         return list;
     }
-
-    // ==========================================
-    // 3. EVALUATOR & SESSION LOGIC
-    // ==========================================
 
     public static Evaluator getEvaluatorById(String id) {
         try (BufferedReader br = new BufferedReader(new FileReader(EVALUATOR_FILE))) {
@@ -470,10 +456,6 @@ public class UserDatabase {
         return students;
     }
 
-    // ==========================================
-    // 4. GRADING SYSTEM
-    // ==========================================
-
     public static boolean hasEvaluatorGraded(String studentId, String evaluatorId) {
         File f = new File(GRADES_FILE);
         if(!f.exists()) return false;
@@ -508,7 +490,6 @@ public class UserDatabase {
         return null;
     }
 
-    // NEW: Get comments from saved evaluation
     public static String getEvaluatorComments(String studentId, String evaluatorId) {
         File f = new File(GRADES_FILE);
         if (!f.exists()) return "";
@@ -517,21 +498,18 @@ public class UserDatabase {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] p = line.split(",");
-                // Expecting Format: SessID, StudID, EvalID, R1, R2, R3, R4, Total, COMMENT
                 if (p.length > 8 && p[1].equals(studentId) && p[2].equals(evaluatorId)) {
-                    return p[8]; // Return the comment
+                    return p[8];
                 }
             }
         } catch (Exception e) {}
         return "";
     }
 
-    // UPDATED: Save Grade with Comments
     public static void saveGrade(String sessionId, String studentId, String evaluatorId, int[] scores, String comments) {
         List<String> allLines = new ArrayList<>();
         int total = Arrays.stream(scores).sum();
         
-        // Sanitize comments to prevent CSV breakage
         String safeComment = (comments == null) ? "" : comments.replace("\n", " ").replace(",", ";");
         
         String newLine = String.format("%s,%s,%s,%d,%d,%d,%d,%d,%s", 
@@ -565,7 +543,6 @@ public class UserDatabase {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    // Overloaded method for backward compatibility
     public static void saveGrade(String sessionId, String studentId, String evaluatorId, int[] scores) {
         saveGrade(sessionId, studentId, evaluatorId, scores, "");
     }
@@ -598,10 +575,9 @@ public class UserDatabase {
         return sums;
     }
     
-    // --- NEW: FETCH FULL EVALUATION DETAILS FOR STUDENT VIEW ---
     public static class EvaluationDetail {
         public String evaluatorName;
-        public int[] scores; // R1, R2, R3, R4
+        public int[] scores; 
         public int total;
         public String comment;
 
@@ -619,7 +595,6 @@ public class UserDatabase {
             String line;
             while((line = br.readLine()) != null) {
                 String[] p = line.split(",");
-                // Format: SessID, StudID, EvalID, R1, R2, R3, R4, Total, Comment
                 if(p.length >= 8 && p[0].equals(sessionId) && p[1].equals(studentId)) {
                     String eId = p[2];
                     String eName = getEvaluatorName(eId);
@@ -642,9 +617,6 @@ public class UserDatabase {
         return (e != null) ? e.getName() : eId;
     }
     
-    // --- NEW: COMMENTS HELPERS (Formatted + Plain) ---
-    
-    // 1. For Dashboard Table (HTML formatted)
     public static String getCommentsForDisplay(String sessionId, String studentId) {
         StringBuilder sb = new StringBuilder("<html>");
         boolean found = false;
@@ -659,7 +631,7 @@ public class UserDatabase {
                         Evaluator ev = getEvaluatorById(evalId);
                         String eName = (ev != null) ? ev.getName() : evalId;
                         
-                        if (found) sb.append("<br><br>"); // Space between comments
+                        if (found) sb.append("<br><br>"); 
                         sb.append("<b>").append(eName).append(":</b> ").append(comment);
                         found = true;
                     }
@@ -670,7 +642,6 @@ public class UserDatabase {
         return sb.append("</html>").toString();
     }
     
-    // 2. For CSV Export (Plain Text)
     public static String getCommentsForCSV(String sessionId, String studentId) {
         StringBuilder sb = new StringBuilder();
         try (BufferedReader br = new BufferedReader(new FileReader(GRADES_FILE))) {
@@ -684,7 +655,7 @@ public class UserDatabase {
                         Evaluator ev = getEvaluatorById(evalId);
                         String eName = (ev != null) ? ev.getName() : evalId;
                         
-                        if (sb.length() > 0) sb.append(" | "); // Separator for CSV text
+                        if (sb.length() > 0) sb.append(" | "); 
                         sb.append(eName).append(": ").append(comment);
                     }
                 }
@@ -696,7 +667,6 @@ public class UserDatabase {
     public static void exportStudentListToCSV(String sessionId) {
         String outFile = "./saved/Final_Report_" + sessionId + ".csv";
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(outFile))) {
-            // Header
             bw.write("Rank,Student ID,Student Name,Average Grade,Award,Evaluator Comments\n");
             
             List<StudentGrade> list = getStudentsWithGrades(sessionId);
@@ -707,10 +677,8 @@ public class UserDatabase {
                 String award = getAwardForStudent(s.getStudentId(), sessionId);
                 if (award == null) award = "None";
                 
-                // Get PLAIN TEXT comments for CSV
                 String comments = getCommentsForCSV(sessionId, s.getStudentId());
                 
-                // Escape quotes for CSV format
                 comments = "\"" + comments.replace("\"", "\"\"") + "\"";
                 
                 bw.write(String.format("%d,%s,%s,%s,%s,%s\n",
@@ -728,14 +696,9 @@ public class UserDatabase {
         }
     }
 
-    // ==========================================
-    // 5. AWARDS & REPORTING
-    // ==========================================
-
     public static void saveAward(String studentId, String sessionId, String awardType) {
         List<String> lines = new ArrayList<>();
         File file = new File(AWARDS_FILE);
-
         if (file.exists()) {
             try (BufferedReader br = new BufferedReader(new FileReader(file))) {
                 String line;
@@ -744,8 +707,6 @@ public class UserDatabase {
                     if (parts.length >= 3) {
                         String sessId = parts[1];
                         String aType = parts[2];
-
-                        // Enforce Unique Award Rule: Remove if duplicate exists for this session
                         if (sessId.equals(sessionId) && aType.equals(awardType)) {
                             continue; 
                         }
@@ -754,7 +715,6 @@ public class UserDatabase {
                 }
             } catch (IOException e) { e.printStackTrace(); }
         }
-
         String newAward = String.format("%s|%s|%s|%s", studentId, sessionId, awardType, new Date().toString());
         lines.add(newAward);
 
@@ -775,7 +735,6 @@ public class UserDatabase {
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
                 if (parts.length >= 3) {
-                    // ID|Session|Award
                     if (parts[1].equals(sessionId) && parts[2].equals(awardType)) {
                         return getStudentById(parts[0]);
                     }

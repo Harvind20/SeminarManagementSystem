@@ -8,7 +8,7 @@ public class Student extends User {
     private String presentationType; 
     private String submissionPath;
     private String sessionId;  
-    private String boardId;    // NEW: Board ID field
+    private String boardId;
 
     public Student(String id, String pwd, String name, String title, String abs, String sv, String type, String path) {
         super(id, pwd, name);
@@ -59,7 +59,7 @@ public class Student extends User {
     public String toFileString() {
         return id + "|" + password + "|" + name + "|" + researchTitle + "|" + 
                abstractText + "|" + supervisor + "|" + presentationType + "|" + 
-               submissionPath + "|" + sessionId + "|" + boardId;  // Added boardId
+               submissionPath + "|" + sessionId + "|" + boardId; 
     }
 
     public String getStudentId() { return id; }

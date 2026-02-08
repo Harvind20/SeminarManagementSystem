@@ -25,9 +25,8 @@ public class SessionManager {
         loadSessions();
     }
 
-    // Method to generate unique session ID
     public String generateSessionId() {
-        loadSessions(); // Reload to get current sessions
+        loadSessions(); 
         int maxId = 0;
         
         for (Session session : sessions) {
@@ -39,9 +38,7 @@ public class SessionManager {
                         maxId = idNum;
                     }
                 }
-            } catch (NumberFormatException e) {
-                // Skip if ID format is not S followed by number
-            }
+            } catch (NumberFormatException e) {}
         }
         
         return "S" + (maxId + 1);
@@ -72,7 +69,6 @@ public class SessionManager {
         this.allEvaluators = UserDatabase.getAllEvaluators();
     }
 
-    // NEW METHOD: Get students registered for a specific session
     public List<Student> getStudentsBySession(String sessionId) {
         return UserDatabase.getStudentsBySession(sessionId);
     }
@@ -80,7 +76,6 @@ public class SessionManager {
     public void saveSessions() {
         try (PrintWriter writer = new PrintWriter(new FileWriter("./saved/sessions.txt"))) {
             for (Session s : sessions) {
-                // Line 1: Basic Info
                 writer.println(s.getSessionId() + "|" + s.getSessionName() + "|" + s.getSessionType() + "|" + s.getSessionTrack() + "|" +
                                s.getDate() + "|" + s.getVenue() + "|" + s.getStartTime() + "|" + s.getEndTime() + "|" + s.getDurationPerStudent());
                 
@@ -120,15 +115,15 @@ public class SessionManager {
                 String[] parts = line.split("\\|");
                 if (parts.length >= 9) {
                     Session s = new Session(
-                        parts[0], // ID
-                        parts[1], // Name
-                        parts[2], // Type
-                        parts[3], // Track
-                        LocalDate.parse(parts[4]), // Date
-                        parts[5], // Venue
-                        LocalTime.parse(parts[6]), // Start
-                        LocalTime.parse(parts[7]), // End
-                        Integer.parseInt(parts[8]) // Duration
+                        parts[0], 
+                        parts[1], 
+                        parts[2], 
+                        parts[3], 
+                        LocalDate.parse(parts[4]),
+                        parts[5], 
+                        LocalTime.parse(parts[6]), 
+                        LocalTime.parse(parts[7]), 
+                        Integer.parseInt(parts[8]) 
                     );
 
                     String scheduleLine = br.readLine();

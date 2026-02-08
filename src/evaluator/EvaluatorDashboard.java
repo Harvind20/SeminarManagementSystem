@@ -13,23 +13,20 @@ public class EvaluatorDashboard extends Dashboard {
     private CardLayout cardLayout;
     private JPanel mainContainer;
     
-    // PAGE 1: SEMINAR LIST
     private JTable seminarTable;
     private DefaultTableModel seminarModel;
     
-    // PAGE 2: STUDENT LIST
     private JPanel studentListPanel;
     private JTable studentTable;
     private DefaultTableModel studentModel;
     private JLabel studentListLabel;
     private String currentSessionId; 
     
-    // PAGE 3: GRADING FORM
     private JPanel gradingPanel;
     private JLabel gradingLabel;
     private JTable rubricTable;
     private DefaultTableModel rubricModel;
-    private JTextArea commentsArea; // NEW: Comment Box
+    private JTextArea commentsArea; 
     private Student targetStudent;   
     
     private Evaluator currentEvaluator;
@@ -183,7 +180,6 @@ public class EvaluatorDashboard extends Dashboard {
 
         gradingPanel.add(new JScrollPane(rubricTable), BorderLayout.CENTER);
 
-        // --- NEW: COMMENTS SECTION ---
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         
@@ -213,7 +209,6 @@ public class EvaluatorDashboard extends Dashboard {
         
         int[] existingScores = UserDatabase.getEvaluatorGrades(studentId, userId);
         
-        // NEW: Load existing comments
         String existingComments = UserDatabase.getEvaluatorComments(studentId, userId);
         commentsArea.setText(existingComments);
         
@@ -243,18 +238,12 @@ public class EvaluatorDashboard extends Dashboard {
             }
             scores[row] = score;
         }
-        
-        // Save Scores AND Comments
         UserDatabase.saveGrade(currentSessionId, targetStudent.getStudentId(), userId, scores, commentsArea.getText());
         
         JOptionPane.showMessageDialog(this, "Grades Saved!");
         loadStudentList(currentSessionId);
         cardLayout.show(mainContainer, "STUDENTS");
     }
-
-    // ============================================
-    // RENDERERS & EDITORS
-    // ============================================
 
     class ViewButtonEditor extends DefaultCellEditor {
         public ViewButtonEditor(JCheckBox c) { super(c); }
@@ -283,8 +272,8 @@ public class EvaluatorDashboard extends Dashboard {
             setText(state);
             setEnabled(!state.equals("Unassigned"));
             
-            if(state.equals("Grade")) setBackground(new Color(60, 179, 113)); // Green
-            else if(state.equals("Edit")) setBackground(new Color(255, 165, 0)); // Orange
+            if(state.equals("Grade")) setBackground(new Color(60, 179, 113)); 
+            else if(state.equals("Edit")) setBackground(new Color(255, 165, 0)); 
             else setBackground(Color.GRAY);
             
             setForeground(Color.WHITE);

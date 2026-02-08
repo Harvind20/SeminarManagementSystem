@@ -59,7 +59,6 @@ import misc.FileHandler;
 
         JOptionPane.showMessageDialog(this, "Registration & Upload Successful");
 
-        // Close both forms
         this.dispose();
         parent.dispose();
 

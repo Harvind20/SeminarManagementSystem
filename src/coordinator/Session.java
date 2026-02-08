@@ -18,7 +18,7 @@ public class Session {
     private String venue;
     private LocalTime startTime;
     private LocalTime endTime;
-    private int durationPerStudent; // in minutes
+    private int durationPerStudent; 
 
     private List<PresentationSlot> schedule;
 
@@ -44,8 +44,6 @@ public class Session {
     public void generateTimeSlots() {
         schedule.clear();
         LocalTime current = startTime;
-        
-        // Loop to create slots until we hit the end time
         while (current.plusMinutes(durationPerStudent).isBefore(endTime) || 
                current.plusMinutes(durationPerStudent).equals(endTime)) {
             
