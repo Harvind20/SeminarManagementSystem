@@ -1,12 +1,11 @@
 package coordinator;
+import evaluator.Evaluator;
 import java.io.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import evaluator.Evaluator;
 import misc.UserDatabase;
 import student.Student;
 
@@ -79,7 +78,7 @@ public class SessionManager {
     }
 
     public void saveSessions() {
-        try (PrintWriter writer = new PrintWriter(new FileWriter("./src/saved/sessions.txt"))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter("./saved/sessions.txt"))) {
             for (Session s : sessions) {
                 // Line 1: Basic Info
                 writer.println(s.getSessionId() + "|" + s.getSessionName() + "|" + s.getSessionType() + "|" + s.getSessionTrack() + "|" +
@@ -110,7 +109,7 @@ public class SessionManager {
 
     public void loadSessions() {
         sessions.clear();
-        File file = new File("./src/saved/sessions.txt");
+        File file = new File("./saved/sessions.txt");
         if (!file.exists()) return;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {

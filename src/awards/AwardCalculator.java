@@ -6,7 +6,7 @@ import java.io.IOException;
 
 public class AwardCalculator {
 
-    private static final String FILE_PATH = "src/saved/evaluations.txt";
+    private static final String FILE_PATH = "./saved/evaluations.txt";
 
     public Award findBestPoster() {
         String bestStudent = null;

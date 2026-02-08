@@ -1,27 +1,29 @@
 package misc;
-import java.io.*;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.*;
 
-import coordinator.Session;
 import evaluator.Evaluator;
+import java.io.*;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import student.Student;
 
 public class UserDatabase {
 
-    private static final String STUDENT_FILE = "./src/saved/students.txt";
-    private static final String EVALUATOR_FILE = "./src/saved/evaluators.txt";
-    private static final String COORDINATOR_FILE = "./src/saved/coordinators.txt";
-    private static final String SESSIONS_FILE = "./src/saved/sessions.txt";
-    private static final String GRADES_FILE = "./src/saved/grades.csv";
-    private static final String AWARDS_FILE = "./src/saved/awards.txt";
+    // --- FILE CONSTANTS ---
+    private static final String STUDENT_FILE = "./saved/students.txt";
+    private static final String EVALUATOR_FILE = "./saved/evaluators.txt";
+    private static final String COORDINATOR_FILE = "./saved/coordinators.txt";
+    private static final String SESSIONS_FILE = "./saved/sessions.txt";
+    private static final String GRADES_FILE = "./saved/evaluations.csv";
+    private static final String AWARDS_FILE = "./saved/awards.txt";
+
+    // ==========================================
+    // 1. AUTHENTICATION & REGISTRATION
+    // ==========================================
 
     public static boolean verifyLogin(String id, String password, String role) {
         String filename = getFileByRole(role);
-        if (filename == null) {
-            return false;
-        }
+        if (filename == null) return false;
 
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             String line;
@@ -41,19 +43,16 @@ public class UserDatabase {
 
     public static void registerUser(String id, String password, String role) {
         String filename = getFileByRole(role);
-        if (filename == null) {
-            return;
-        }
+        if (filename == null) return;
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename, true))) {
             String lineToWrite = "";
-
             switch (role) {
                 case "Student":
                     lineToWrite = id + "|" + password + "|New Student|None|None|None|None|None|None|None";
                     break;
                 case "Evaluator":
-                    lineToWrite = id + "|" + password + "|New Evaluator|None";
+                    lineToWrite = id + "|" + password + "|New Evaluator|None|";
                     break;
                 case "Coordinator":
                     lineToWrite = id + "|" + password + "|New Coordinator";
@@ -69,21 +68,50 @@ public class UserDatabase {
         }
     }
 
-    public static void saveStudentRegistration(Student updatedStudent) {
-        List<String> lines = new ArrayList<>();
+    private static String getFileByRole(String role) {
+        switch (role) {
+            case "Student": return STUDENT_FILE;
+            case "Evaluator": return EVALUATOR_FILE;
+            case "Coordinator": return COORDINATOR_FILE;
+            default: return null;
+        }
+    }
 
+    // ==========================================
+    // 2. STUDENT MANAGEMENT
+    // ==========================================
+
+    public static void saveStudentRegistration(Student s) {
+        List<String> lines = new ArrayList<>();
+        boolean updated = false;
+        
         try (BufferedReader br = new BufferedReader(new FileReader(STUDENT_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] p = line.split("\\|");
-                if (p[0].equals(updatedStudent.getStudentId())) {
-                    lines.add(updatedStudent.toFileString());
+                if (p[0].equals(s.getStudentId())) {
+                    String currentSession = (p.length > 8) ? p[8] : "None";
+                    if (currentSession.equals(s.getSessionId())) {
+                        lines.add(s.toFileString());
+                        updated = true;
+                    } else if (currentSession.equals("None")) {
+                        if (!updated) {
+                            lines.add(s.toFileString());
+                            updated = true;
+                        } else {
+                            lines.add(line); 
+                        }
+                    } else {
+                        lines.add(line);
+                    }
                 } else {
                     lines.add(line);
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {}
+
+        if (!updated) {
+            lines.add(s.toFileString());
         }
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(STUDENT_FILE))) {
@@ -91,9 +119,43 @@ public class UserDatabase {
                 bw.write(l);
                 bw.newLine();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) { e.printStackTrace(); }
+    }
+
+    public static void unregisterStudent(String studentId, String sessionId) {
+        List<String> lines = new ArrayList<>();
+        int studentEntryCount = 0;
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(STUDENT_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith(studentId + "|")) studentEntryCount++;
+            }
+        } catch (Exception e) {}
+
+        try (BufferedReader br = new BufferedReader(new FileReader(STUDENT_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split("\\|");
+                if (p[0].equals(studentId) && p.length > 8 && p[8].equals(sessionId)) {
+                    if (studentEntryCount <= 1) {
+                        Student reset = new Student(p[0], p[1], p[2], "None", "None", "None", "None", "None");
+                        reset.setSessionId("None");
+                        reset.setBoardId("None");
+                        lines.add(reset.toFileString());
+                    }
+                } else {
+                    lines.add(line);
+                }
+            }
+        } catch (Exception e) {}
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(STUDENT_FILE))) {
+            for (String l : lines) {
+                bw.write(l);
+                bw.newLine();
+            }
+        } catch (IOException e) { e.printStackTrace(); }
     }
 
     public static Student getStudentById(String id) {
@@ -102,26 +164,47 @@ public class UserDatabase {
             while ((line = br.readLine()) != null) {
                 String[] p = line.split("\\|");
                 if (p[0].equals(id)) {
-                    // Updated to handle 10 fields (including boardId)
-                    String researchTitle = (p.length > 3 && !p[3].equals("None")) ? p[3] : "None";
-                    String abstractText = (p.length > 4 && !p[4].equals("None")) ? p[4] : "None";
-                    String supervisor = (p.length > 5 && !p[5].equals("None")) ? p[5] : "None";
-                    String presentationType = (p.length > 6 && !p[6].equals("None")) ? p[6] : "None";
-                    String submissionPath = (p.length > 7 && !p[7].equals("None")) ? p[7] : "None";
-                    String sessionId = (p.length > 8 && !p[8].equals("None")) ? p[8] : "None";
-                    String boardId = (p.length > 9 && !p[9].equals("None")) ? p[9] : "None";
-                    
-                    Student student = new Student(p[0], p[1], p[2], researchTitle, abstractText, 
-                                                supervisor, presentationType, submissionPath);
-                    student.setSessionId(sessionId);
-                    student.setBoardId(boardId);
-                    return student;
+                    String title = (p.length > 3) ? p[3] : "None";
+                    String abs = (p.length > 4) ? p[4] : "None";
+                    String sup = (p.length > 5) ? p[5] : "None";
+                    String type = (p.length > 6) ? p[6] : "None";
+                    String path = (p.length > 7) ? p[7] : "None";
+                    String sess = (p.length > 8) ? p[8] : "None";
+                    String board = (p.length > 9) ? p[9] : "None";
+
+                    Student s = new Student(p[0], p[1], p[2], title, abs, sup, type, path);
+                    s.setSessionId(sess);
+                    s.setBoardId(board);
+                    return s;
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) { e.printStackTrace(); }
         return null;
+    }
+
+    public static List<Student> getStudentRegistrations(String studentId) {
+        List<Student> list = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(STUDENT_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split("\\|");
+                if (p[0].equals(studentId) && p.length > 8 && !p[8].equals("None")) {
+                    String title = (p.length > 3) ? p[3] : "None";
+                    String abs = (p.length > 4) ? p[4] : "None";
+                    String sup = (p.length > 5) ? p[5] : "None";
+                    String type = (p.length > 6) ? p[6] : "None";
+                    String path = (p.length > 7) ? p[7] : "None";
+                    String sess = (p.length > 8) ? p[8] : "None";
+                    String board = (p.length > 9) ? p[9] : "None";
+
+                    Student s = new Student(p[0], p[1], p[2], title, abs, sup, type, path);
+                    s.setSessionId(sess);
+                    s.setBoardId(board);
+                    list.add(s);
+                }
+            }
+        } catch (Exception e) {}
+        return list;
     }
 
     public static List<Student> getAllStudents() {
@@ -132,43 +215,59 @@ public class UserDatabase {
                 String[] p = line.split("\\|");
                 if (p.length >= 7) {
                     String path = (p.length > 7) ? p[7] : "None";
-                    String sessionId = (p.length > 8) ? p[8] : "None";
-                    String boardId = (p.length > 9) ? p[9] : "None";
-                    Student student = new Student(p[0], p[1], p[2], p[3], p[4], p[5], p[6], path);
-                    student.setSessionId(sessionId);
-                    student.setBoardId(boardId);
-                    list.add(student);
+                    Student s = new Student(p[0], p[1], p[2], p[3], p[4], p[5], p[6], path);
+                    if(p.length > 8) s.setSessionId(p[8]);
+                    if(p.length > 9) s.setBoardId(p[9]);
+                    list.add(s);
                 }
             }
-        } catch (IOException e) {
-        }
+        } catch (IOException e) {}
         return list;
     }
-
-    // Get students registered for a specific session
+    
     public static List<Student> getStudentsBySession(String sessionId) {
         List<Student> list = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(STUDENT_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] p = line.split("\\|");
-                if (p.length >= 10) {  // Updated to 10 fields
-                    String studentSessionId = p[8];
-                    if (studentSessionId.equals(sessionId)) {
-                        String path = p[7];
-                        String boardId = p[9];
-                        Student student = new Student(p[0], p[1], p[2], p[3], p[4], p[5], p[6], path);
-                        student.setSessionId(studentSessionId);
-                        student.setBoardId(boardId);
-                        list.add(student);
-                    }
+                if (p.length >= 9 && p[8].equals(sessionId)) {
+                    String title = (p.length > 3) ? p[3] : "None";
+                    String abs = (p.length > 4) ? p[4] : "None";
+                    String sup = (p.length > 5) ? p[5] : "None";
+                    String type = (p.length > 6) ? p[6] : "None";
+                    String path = (p.length > 7) ? p[7] : "None";
+                    String sess = (p.length > 8) ? p[8] : "None";
+                    String board = (p.length > 9) ? p[9] : "None";
+
+                    Student s = new Student(p[0], p[1], p[2], title, abs, sup, type, path);
+                    s.setSessionId(sess);
+                    s.setBoardId(board);
+                    list.add(s);
                 }
             }
-        } catch (IOException e) {
-        }
+        } catch (IOException e) {}
         return list;
     }
 
+    // ==========================================
+    // 3. EVALUATOR & SESSION LOGIC
+    // ==========================================
+
+    public static Evaluator getEvaluatorById(String id) {
+        try (BufferedReader br = new BufferedReader(new FileReader(EVALUATOR_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split("\\|");
+                if (p[0].equals(id)) {
+                    String sessions = (p.length > 4) ? p[4] : ""; 
+                    return new Evaluator(p[0], p[2], p[3], sessions);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+    
     public static List<Evaluator> getAllEvaluators() {
         List<Evaluator> list = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(EVALUATOR_FILE))) {
@@ -176,278 +275,519 @@ public class UserDatabase {
             while ((line = br.readLine()) != null) {
                 String[] p = line.split("\\|");
                 if (p.length >= 4) {
-                    list.add(new Evaluator(p[0], p[2], p[3]));
+                    String sessions = (p.length > 4) ? p[4] : "";
+                    list.add(new Evaluator(p[0], p[2], p[3], sessions));
                 }
             }
-        } catch (IOException e) {
-        }
+        } catch (IOException e) {}
         return list;
     }
 
-    // Get all available sessions
+    public static String[] getSessionDetails(String sessionId) {
+        try (BufferedReader br = new BufferedReader(new FileReader(SESSIONS_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if(line.startsWith("Schedule:") || line.startsWith("----")) continue;
+                String[] p = line.split("\\|");
+                if (p[0].equals(sessionId)) {
+                    String start = p[6].contains(".") ? p[6].substring(0, p[6].indexOf(".")) : p[6];
+                    String end = p[7].contains(".") ? p[7].substring(0, p[7].indexOf(".")) : p[7];
+                    return new String[]{p[1], start + " - " + end}; 
+                }
+            }
+        } catch (Exception e) {}
+        return new String[]{"Unknown", "Unknown"};
+    }
+    
     public static List<String> getAllAvailableSessions() {
         List<String> sessions = new ArrayList<>();
         File file = new File(SESSIONS_FILE);
-        
-        if (!file.exists()) {
-            return sessions;
-        }
+        if (!file.exists()) return sessions;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty() || line.startsWith("Schedule:") || line.startsWith("----")) {
-                    continue;
-                }
-                
-                String[] parts = line.split("\\|");
-                if (parts.length >= 2) {
-                    String sessionId = parts[0].trim();
-                    String sessionName = parts[1].trim();
-                    sessions.add(sessionId + " - " + sessionName);
+                if (line.trim().isEmpty() || line.startsWith("Schedule:") || line.startsWith("----")) continue;
+                String[] p = line.split("\\|");
+                if (p.length >= 2) {
+                    sessions.add(p[0].trim() + " - " + p[1].trim());
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error reading sessions file: " + e.getMessage());
-        }
-        
+        } catch (IOException e) {}
         return sessions;
     }
 
-    // Validate if a session exists
     public static boolean sessionExists(String sessionId) {
-        File file = new File(SESSIONS_FILE);
-        
-        if (!file.exists()) {
-            return false;
+        for(String s : getAllAvailableSessions()) {
+            if(s.startsWith(sessionId + " - ")) return true;
         }
-
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty() || line.startsWith("Schedule:") || line.startsWith("----")) {
-                    continue;
-                }
-                
-                String[] parts = line.split("\\|");
-                if (parts.length >= 1 && parts[0].trim().equals(sessionId)) {
-                    return true;
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("Error reading sessions file: " + e.getMessage());
-        }
-        
         return false;
     }
 
-    // Get sessions where evaluator is assigned
-    public static List<String> getSessionsForEvaluator(String evaluatorId) {
-        List<String> sessions = new ArrayList<>();
-        File file = new File(SESSIONS_FILE);
-        
-        if (!file.exists()) {
-            return sessions;
-        }
-
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+    public static String getEvaluatorSlotDetails(String sessionId, String evaluatorId) {
+        StringBuilder details = new StringBuilder("<html>");
+        try (BufferedReader br = new BufferedReader(new FileReader(SESSIONS_FILE))) {
             String line;
-            String currentSessionId = null;
-            String currentSessionInfo = null;
-            
+            LocalTime sessionStart = null;
+            int duration = 20;
+
             while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty() || line.startsWith("----")) {
-                    continue;
-                }
-                
-                if (!line.startsWith("Schedule:")) {
-                    // This is a session info line
-                    String[] parts = line.split("\\|");
-                    if (parts.length >= 2) {
-                        currentSessionId = parts[0].trim();
-                        currentSessionInfo = parts[0] + "|" + parts[1] + "|" + 
-                                           (parts.length > 6 ? parts[6] : "") + "|" + 
-                                           (parts.length > 7 ? parts[7] : "");
+                if (line.startsWith(sessionId + "|")) {
+                    String[] p = line.split("\\|");
+                    if (p.length >= 9) {
+                        try {
+                            sessionStart = LocalTime.parse(p[6]);
+                            duration = Integer.parseInt(p[8]);
+                        } catch (Exception e) {
+                            sessionStart = LocalTime.of(9, 0);
+                        }
                     }
-                } else if (line.startsWith("Schedule:") && currentSessionId != null) {
-                    // Check if evaluator is in this session's schedule
-                    if (line.contains(evaluatorId)) {
-                        sessions.add(currentSessionInfo);
+
+                    String schedLine = br.readLine();
+                    if (schedLine != null && schedLine.startsWith("Schedule:")) {
+                        String[] parts = schedLine.substring(9).split(",");
+                        for (String part : parts) {
+                            String[] data = part.split(":");
+                            if (data.length >= 3 && data[2].contains(evaluatorId)) {
+                                int slotIndex = Integer.parseInt(data[0]);
+                                LocalTime slotStart = sessionStart.plusMinutes((long) slotIndex * duration);
+                                LocalTime slotEnd = slotStart.plusMinutes(duration);
+                                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+                                details.append("Slot ").append(slotIndex + 1).append(" : ")
+                                       .append(slotStart.format(fmt)).append("-")
+                                       .append(slotEnd.format(fmt)).append("<br>");
+                            }
+                        }
                     }
+                    break;
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error reading sessions for evaluator: " + e.getMessage());
-        }
-        
-        return sessions;
+        } catch (Exception e) { e.printStackTrace(); }
+        if (details.toString().equals("<html>")) return "No slots assigned";
+        return details.append("</html>").toString();
     }
 
-    // Get time slots for evaluator in a specific session
-    public static List<String> getTimeSlotsForEvaluator(String evaluatorId, String sessionId) {
-        List<String> timeSlots = new ArrayList<>();
-        File file = new File(SESSIONS_FILE);
-        
-        if (!file.exists()) {
-            return timeSlots;
-        }
-
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+    public static String getStudentSlotTime(String sessionId, String studentId) {
+        try (BufferedReader br = new BufferedReader(new FileReader(SESSIONS_FILE))) {
             String line;
-            String currentSessionId = null;
-            boolean readingTargetSession = false;
-            
+            LocalTime sessionStart = null;
+            int duration = 20;
+
             while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty() || line.startsWith("----")) {
-                    readingTargetSession = false;
-                    continue;
-                }
-                
-                if (!line.startsWith("Schedule:")) {
-                    // This is a session info line
-                    String[] parts = line.split("\\|");
-                    if (parts.length >= 1) {
-                        currentSessionId = parts[0].trim();
-                        readingTargetSession = currentSessionId.equals(sessionId);
+                if (line.startsWith(sessionId + "|")) {
+                    String[] p = line.split("\\|");
+                    try {
+                        sessionStart = LocalTime.parse(p[6]);
+                        duration = Integer.parseInt(p[8]);
+                    } catch (Exception e) {
+                        sessionStart = LocalTime.of(9, 0);
                     }
-                } else if (line.startsWith("Schedule:") && readingTargetSession) {
-                    // Parse schedule line
-                    String scheduleData = line.substring(9); // Remove "Schedule:"
-                    String[] slots = scheduleData.split(",");
-                    
-                    for (String slot : slots) {
-                        if (slot.trim().isEmpty()) continue;
-                        
-                        String[] components = slot.split(":");
-                        if (components.length >= 3) {
-                            String slotIndex = components[0];
-                            String evaluatorIds = components[2];
-                            
-                            if (!evaluatorIds.equals("null") && evaluatorIds.contains(evaluatorId)) {
-                                // Get time slot info
-                                try {
-                                    int index = Integer.parseInt(slotIndex);
-                                    // Calculate time based on session data
-                                    timeSlots.add("Slot " + (index + 1));
-                                } catch (NumberFormatException e) {
-                                    // Skip invalid slot
-                                }
+
+                    String schedLine = br.readLine();
+                    if (schedLine != null && schedLine.startsWith("Schedule:")) {
+                        String[] parts = schedLine.substring(9).split(",");
+                        for (String part : parts) {
+                            String[] data = part.split(":");
+                            if (data.length >= 2 && data[1].equals(studentId)) {
+                                int slotIndex = Integer.parseInt(data[0]);
+                                LocalTime slotStart = sessionStart.plusMinutes((long) slotIndex * duration);
+                                LocalTime slotEnd = slotStart.plusMinutes(duration);
+                                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+                                return "Slot " + (slotIndex + 1) + " (" + slotStart.format(fmt) + "-" + slotEnd.format(fmt) + ")";
                             }
                         }
                     }
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error reading time slots: " + e.getMessage());
-        }
-        
-        return timeSlots;
+        } catch (Exception e) {}
+        return "Unassigned";
     }
 
-    // Save grades to CSV file
-    public static void saveGrade(String sessionId, String studentId, String evaluatorId, 
-                                String slot, int[] rubrics, int totalGrade) {
-        try {
-            // Create directory if it doesn't exist
-            File gradesDir = new File("./src/saved/");
-            if (!gradesDir.exists()) {
-                gradesDir.mkdirs();
-            }
-            
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(GRADES_FILE, true))) {
-                String csvLine = String.format("%s,%s,%s,%s,%d,%d,%d,%d,%d",
-                    sessionId, studentId, evaluatorId, slot,
-                    rubrics[0], rubrics[1], rubrics[2], rubrics[3],
-                    totalGrade);
-                bw.write(csvLine);
-                bw.newLine();
-            }
-        } catch (IOException e) {
-            System.out.println("Error saving grade: " + e.getMessage());
-        }
-    }
-
-    // NEW: Get average grade for a student in a session
-    public static double getStudentAverageGrade(String sessionId, String studentId) {
-        File file = new File(GRADES_FILE);
-        if (!file.exists()) {
-            return 0.0;
-        }
-
-        List<Integer> grades = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+    public static boolean isEvaluatorAssignedToStudent(String sessionId, String studentId, String evaluatorId) {
+        try (BufferedReader br = new BufferedReader(new FileReader(SESSIONS_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 9) {
-                    if (parts[0].equals(sessionId) && parts[1].equals(studentId)) {
-                        try {
-                            int grade = Integer.parseInt(parts[8]); // totalGrade is at index 8
-                            grades.add(grade);
-                        } catch (NumberFormatException e) {
-                            // Skip invalid grade
+                if (line.startsWith(sessionId + "|")) {
+                    String sched = br.readLine();
+                    if (sched != null && sched.startsWith("Schedule:")) {
+                        String[] slots = sched.substring(9).split(",");
+                        for (String slot : slots) {
+                            String[] parts = slot.split(":"); 
+                            if (parts.length >= 3 && parts[1].equals(studentId)) {
+                                if (parts[2].contains(evaluatorId)) return true;
+                            }
                         }
                     }
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error reading grades: " + e.getMessage());
-        }
-        
-        if (grades.isEmpty()) {
-            return 0.0;
-        }
-        
-        int sum = 0;
-        for (int grade : grades) {
-            sum += grade;
-        }
-        return (double) sum / grades.size();
+        } catch (Exception e) {}
+        return false;
     }
 
-    // NEW: Get all students with their average grades for a session
-    public static List<StudentGrade> getStudentsWithGrades(String sessionId) {
-        List<StudentGrade> studentGrades = new ArrayList<>();
-        
-        // Get all students registered for this session
-        List<Student> students = getStudentsBySession(sessionId);
-        
-        for (Student student : students) {
-            double avgGrade = getStudentAverageGrade(sessionId, student.getStudentId());
-            studentGrades.add(new StudentGrade(student, avgGrade));
-        }
-        
-        // Sort by average grade (highest to lowest)
-        studentGrades.sort((sg1, sg2) -> Double.compare(sg2.getAverageGrade(), sg1.getAverageGrade()));
-        
-        return studentGrades;
-    }
-
-    // NEW: Save award nomination
-    public static void saveAward(String studentId, String sessionId, String awardType) {
-        try {
-            File awardsDir = new File("./src/saved/");
-            if (!awardsDir.exists()) {
-                awardsDir.mkdirs();
+    public static List<String> getEvaluatorSlots(String sessionId, String evaluatorId) {
+        List<String> slots = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(SESSIONS_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith(sessionId + "|")) {
+                    String sched = br.readLine(); 
+                    if (sched != null && sched.startsWith("Schedule:")) {
+                        String[] parts = sched.substring(9).split(",");
+                        for (String part : parts) {
+                            String[] details = part.split(":");
+                            if (details.length >= 3 && details[2].contains(evaluatorId)) {
+                                slots.add("Slot " + (Integer.parseInt(details[0]) + 1));
+                            }
+                        }
+                    }
+                }
             }
-            
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(AWARDS_FILE, true))) {
-                String awardLine = String.format("%s|%s|%s|%s",
-                    studentId, sessionId, awardType, new Date().toString());
-                bw.write(awardLine);
+        } catch (Exception e) { e.printStackTrace(); }
+        return slots;
+    }
+
+    public static List<Student> getStudentsInSlot(String sessionId, int slotIndex) {
+        List<Student> students = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(SESSIONS_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith(sessionId + "|")) {
+                    String schedLine = br.readLine();
+                    String[] slots = schedLine.substring(9).split(",");
+                    for (String part : slots) {
+                        String[] details = part.split(":");
+                        if (Integer.parseInt(details[0]) == slotIndex) {
+                            String sId = details[1];
+                            if (!sId.equals("null")) {
+                                Student s = getStudentById(sId);
+                                if (s != null) students.add(s);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return students;
+    }
+
+    // ==========================================
+    // 4. GRADING SYSTEM
+    // ==========================================
+
+    public static boolean hasEvaluatorGraded(String studentId, String evaluatorId) {
+        File f = new File(GRADES_FILE);
+        if(!f.exists()) return false;
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                if (p.length > 2 && p[1].equals(studentId) && p[2].equals(evaluatorId)) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {}
+        return false;
+    }
+
+    public static int[] getEvaluatorGrades(String studentId, String evaluatorId) {
+        File f = new File(GRADES_FILE);
+        if(!f.exists()) return null;
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                if (p.length > 7 && p[1].equals(studentId) && p[2].equals(evaluatorId)) {
+                    return new int[]{
+                        Integer.parseInt(p[3]), Integer.parseInt(p[4]),
+                        Integer.parseInt(p[5]), Integer.parseInt(p[6])
+                    };
+                }
+            }
+        } catch (Exception e) {}
+        return null;
+    }
+
+    // NEW: Get comments from saved evaluation
+    public static String getEvaluatorComments(String studentId, String evaluatorId) {
+        File f = new File(GRADES_FILE);
+        if (!f.exists()) return "";
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                // Expecting Format: SessID, StudID, EvalID, R1, R2, R3, R4, Total, COMMENT
+                if (p.length > 8 && p[1].equals(studentId) && p[2].equals(evaluatorId)) {
+                    return p[8]; // Return the comment
+                }
+            }
+        } catch (Exception e) {}
+        return "";
+    }
+
+    // UPDATED: Save Grade with Comments
+    public static void saveGrade(String sessionId, String studentId, String evaluatorId, int[] scores, String comments) {
+        List<String> allLines = new ArrayList<>();
+        int total = Arrays.stream(scores).sum();
+        
+        // Sanitize comments to prevent CSV breakage
+        String safeComment = (comments == null) ? "" : comments.replace("\n", " ").replace(",", ";");
+        
+        String newLine = String.format("%s,%s,%s,%d,%d,%d,%d,%d,%s", 
+            sessionId, studentId, evaluatorId, scores[0], scores[1], scores[2], scores[3], total, safeComment);
+        
+        boolean updated = false;
+        File f = new File(GRADES_FILE);
+        
+        if (f.exists()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] p = line.split(",");
+                    if (p.length > 2 && p[1].equals(studentId) && p[2].equals(evaluatorId)) {
+                        allLines.add(newLine); 
+                        updated = true;
+                    } else {
+                        allLines.add(line);
+                    }
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+
+        if (!updated) allLines.add(newLine);
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(GRADES_FILE))) {
+            for (String l : allLines) {
+                bw.write(l);
                 bw.newLine();
             }
-        } catch (IOException e) {
-            System.out.println("Error saving award: " + e.getMessage());
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    // Overloaded method for backward compatibility
+    public static void saveGrade(String sessionId, String studentId, String evaluatorId, int[] scores) {
+        saveGrade(sessionId, studentId, evaluatorId, scores, "");
+    }
+
+    public static double[] getStudentAverages(String studentId) {
+        double[] sums = new double[5]; 
+        int count = 0;
+        
+        File f = new File(GRADES_FILE);
+        if (!f.exists()) return null;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                if (p.length > 7 && p[1].equals(studentId)) {
+                    sums[0] += Integer.parseInt(p[3]); 
+                    sums[1] += Integer.parseInt(p[4]); 
+                    sums[2] += Integer.parseInt(p[5]); 
+                    sums[3] += Integer.parseInt(p[6]); 
+                    sums[4] += Integer.parseInt(p[7]); 
+                    count++;
+                }
+            }
+        } catch (Exception e) {}
+
+        if (count == 0) return null;
+
+        for (int i = 0; i < 5; i++) sums[i] = sums[i] / count;
+        return sums;
+    }
+    
+    // --- NEW: FETCH FULL EVALUATION DETAILS FOR STUDENT VIEW ---
+    public static class EvaluationDetail {
+        public String evaluatorName;
+        public int[] scores; // R1, R2, R3, R4
+        public int total;
+        public String comment;
+
+        public EvaluationDetail(String eName, int[] s, int t, String c) {
+            evaluatorName = eName; scores = s; total = t; comment = c;
         }
     }
 
-    // NEW: Check if student already has an award for this session
-    public static boolean hasAward(String studentId, String sessionId) {
-        File file = new File(AWARDS_FILE);
-        if (!file.exists()) {
-            return false;
+    public static List<EvaluationDetail> getEvaluationDetails(String sessionId, String studentId) {
+        List<EvaluationDetail> list = new ArrayList<>();
+        File f = new File(GRADES_FILE);
+        if(!f.exists()) return list;
+
+        try(BufferedReader br = new BufferedReader(new FileReader(f))) {
+            String line;
+            while((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                // Format: SessID, StudID, EvalID, R1, R2, R3, R4, Total, Comment
+                if(p.length >= 8 && p[0].equals(sessionId) && p[1].equals(studentId)) {
+                    String eId = p[2];
+                    String eName = getEvaluatorName(eId);
+                    int[] scores = {
+                        Integer.parseInt(p[3]), Integer.parseInt(p[4]),
+                        Integer.parseInt(p[5]), Integer.parseInt(p[6])
+                    };
+                    int total = Integer.parseInt(p[7]);
+                    String comment = (p.length > 8) ? p[8] : "-";
+                    
+                    list.add(new EvaluationDetail(eName, scores, total, comment));
+                }
+            }
+        } catch(Exception e) {}
+        return list;
+    }
+
+    private static String getEvaluatorName(String eId) {
+        Evaluator e = getEvaluatorById(eId);
+        return (e != null) ? e.getName() : eId;
+    }
+    
+    // --- NEW: COMMENTS HELPERS (Formatted + Plain) ---
+    
+    // 1. For Dashboard Table (HTML formatted)
+    public static String getCommentsForDisplay(String sessionId, String studentId) {
+        StringBuilder sb = new StringBuilder("<html>");
+        boolean found = false;
+        try (BufferedReader br = new BufferedReader(new FileReader(GRADES_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                if (p.length > 8 && p[0].equals(sessionId) && p[1].equals(studentId)) {
+                    String evalId = p[2];
+                    String comment = p[8].trim();
+                    if (!comment.isEmpty() && !comment.equals("null")) {
+                        Evaluator ev = getEvaluatorById(evalId);
+                        String eName = (ev != null) ? ev.getName() : evalId;
+                        
+                        if (found) sb.append("<br><br>"); // Space between comments
+                        sb.append("<b>").append(eName).append(":</b> ").append(comment);
+                        found = true;
+                    }
+                }
+            }
+        } catch (Exception e) {}
+        if (!found) return "-";
+        return sb.append("</html>").toString();
+    }
+    
+    // 2. For CSV Export (Plain Text)
+    public static String getCommentsForCSV(String sessionId, String studentId) {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new FileReader(GRADES_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                if (p.length > 8 && p[0].equals(sessionId) && p[1].equals(studentId)) {
+                    String evalId = p[2];
+                    String comment = p[8].trim();
+                    if (!comment.isEmpty() && !comment.equals("null")) {
+                        Evaluator ev = getEvaluatorById(evalId);
+                        String eName = (ev != null) ? ev.getName() : evalId;
+                        
+                        if (sb.length() > 0) sb.append(" | "); // Separator for CSV text
+                        sb.append(eName).append(": ").append(comment);
+                    }
+                }
+            }
+        } catch (Exception e) {}
+        return sb.length() == 0 ? "None" : sb.toString();
+    }
+
+    public static void exportStudentListToCSV(String sessionId) {
+        String outFile = "./saved/Final_Report_" + sessionId + ".csv";
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(outFile))) {
+            // Header
+            bw.write("Rank,Student ID,Student Name,Average Grade,Award,Evaluator Comments\n");
+            
+            List<StudentGrade> list = getStudentsWithGrades(sessionId);
+            int rank = 1;
+            
+            for (StudentGrade sg : list) {
+                Student s = sg.getStudent();
+                String award = getAwardForStudent(s.getStudentId(), sessionId);
+                if (award == null) award = "None";
+                
+                // Get PLAIN TEXT comments for CSV
+                String comments = getCommentsForCSV(sessionId, s.getStudentId());
+                
+                // Escape quotes for CSV format
+                comments = "\"" + comments.replace("\"", "\"\"") + "\"";
+                
+                bw.write(String.format("%d,%s,%s,%s,%s,%s\n",
+                    rank++,
+                    s.getStudentId(),
+                    s.getName(),
+                    sg.getFormattedGrade(),
+                    award,
+                    comments
+                ));
+            }
+            System.out.println("Full Report Exported to: " + outFile);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
+
+    // ==========================================
+    // 5. AWARDS & REPORTING
+    // ==========================================
+
+    public static void saveAward(String studentId, String sessionId, String awardType) {
+        List<String> lines = new ArrayList<>();
+        File file = new File(AWARDS_FILE);
+
+        if (file.exists()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] parts = line.split("\\|");
+                    if (parts.length >= 3) {
+                        String sessId = parts[1];
+                        String aType = parts[2];
+
+                        // Enforce Unique Award Rule: Remove if duplicate exists for this session
+                        if (sessId.equals(sessionId) && aType.equals(awardType)) {
+                            continue; 
+                        }
+                    }
+                    lines.add(line); 
+                }
+            } catch (IOException e) { e.printStackTrace(); }
+        }
+
+        String newAward = String.format("%s|%s|%s|%s", studentId, sessionId, awardType, new Date().toString());
+        lines.add(newAward);
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(AWARDS_FILE))) {
+            for (String l : lines) {
+                bw.write(l);
+                bw.newLine();
+            }
+        } catch (IOException e) { e.printStackTrace(); }
+    }
+
+    public static Student getStudentWithAward(String sessionId, String awardType) {
+        File file = new File(AWARDS_FILE);
+        if (!file.exists()) return null;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length >= 3) {
+                    // ID|Session|Award
+                    if (parts[1].equals(sessionId) && parts[2].equals(awardType)) {
+                        return getStudentById(parts[0]);
+                    }
+                }
+            }
+        } catch (IOException e) {}
+        return null;
+    }
+
+    public static String getAwardForStudent(String studentId, String sessionId) {
+        File file = new File(AWARDS_FILE);
+        if (!file.exists()) return null;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
@@ -455,18 +795,18 @@ public class UserDatabase {
                 String[] parts = line.split("\\|");
                 if (parts.length >= 3) {
                     if (parts[0].equals(studentId) && parts[1].equals(sessionId)) {
-                        return true;
+                        return parts[2];
                     }
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error reading awards: " + e.getMessage());
-        }
-        
-        return false;
+        } catch (IOException e) {}
+        return null;
+    }
+    
+    public static boolean hasAward(String studentId, String sessionId) {
+        return getAwardForStudent(studentId, sessionId) != null;
     }
 
-    // NEW: Inner class to hold student with grade
     public static class StudentGrade {
         private Student student;
         private double averageGrade;
@@ -475,33 +815,21 @@ public class UserDatabase {
             this.student = student;
             this.averageGrade = averageGrade;
         }
-        
-        public Student getStudent() {
-            return student;
-        }
-        
-        public double getAverageGrade() {
-            return averageGrade;
-        }
-        
+        public Student getStudent() { return student; }
+        public double getAverageGrade() { return averageGrade; }
         public String getFormattedGrade() {
-            if (averageGrade == 0.0) {
-                return "No grades yet";
-            }
-            return String.format("%.1f/40", averageGrade);
+            return (averageGrade == 0.0) ? "No grades yet" : String.format("%.1f/40", averageGrade);
         }
     }
 
-    private static String getFileByRole(String role) {
-        switch (role) {
-            case "Student":
-                return STUDENT_FILE;
-            case "Evaluator":
-                return EVALUATOR_FILE;
-            case "Coordinator":
-                return COORDINATOR_FILE;
-            default:
-                return null;
+    public static List<StudentGrade> getStudentsWithGrades(String sessionId) {
+        List<StudentGrade> studentGrades = new ArrayList<>();
+        for (Student s : getStudentsBySession(sessionId)) {
+            double[] avgs = getStudentAverages(s.getStudentId());
+            double totalAvg = (avgs != null) ? avgs[4] : 0.0;
+            studentGrades.add(new StudentGrade(s, totalAvg));
         }
+        studentGrades.sort((sg1, sg2) -> Double.compare(sg2.getAverageGrade(), sg1.getAverageGrade()));
+        return studentGrades;
     }
 }

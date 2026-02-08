@@ -1,358 +1,435 @@
 package student;
+
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.List;
+import java.util.Random;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-
+import javax.swing.table.TableCellRenderer;
 import misc.Dashboard;
 import misc.UserDatabase;
 
 public class StudentDashboard extends Dashboard {
-    
+
+    private CardLayout cardLayout;
+    private JPanel mainContainer;
+
+    // View Components
     private JTabbedPane tabbedPane;
-    private JTable scheduleTable;
-    private DefaultTableModel scheduleModel;
-    
-    // Registration tab components
-    private JTextField idField, nameField, titleField, supervisorField, boardIdField;
-    private JTextArea abstractArea;
-    private JComboBox<String> sessionBox, typeBox;
-    private JButton uploadBtn, submitBtn;
+    private JTable availableTable, registeredTable, gradesTable;
+    private DefaultTableModel availableModel, registeredModel, gradesModel;
+
+    // Form Components
+    private JPanel formPanel;
+    private JTextField idField, nameField, boardIdField, sessionDisplayField, titleField;
+    private JComboBox<String> abstractBox, supervisorBox, typeBox;
+    private JButton uploadBtn, saveBtn, cancelBtn;
     private JLabel filePathLabel;
-    private Student currentStudent;
+    
+    // Data
+    private Student currentProfile;
+    private List<Student> myRegistrations;
     private String uploadedFilePath;
+    private String targetSessionIdForRegistration;
 
     public StudentDashboard(String studentId) {
-        super(studentId, "Student Dashboard - FCSIT Seminar System");
-        setSize(900, 600);
+        super(studentId, "Student Dashboard - Seminar System");
+        setSize(1000, 700);
         setLocationRelativeTo(null);
     }
 
     @Override
     protected void buildDashboard() {
-        currentStudent = UserDatabase.getStudentById(userId);
-        if (currentStudent == null) {
+        currentProfile = UserDatabase.getStudentById(userId);
+        if (currentProfile == null) {
             JOptionPane.showMessageDialog(this, "Error: Student not found.");
-            dispose();
-            return;
+            dispose(); return;
         }
         
+        myRegistrations = UserDatabase.getStudentRegistrations(userId);
+
+        cardLayout = new CardLayout();
+        mainContainer = new JPanel(cardLayout);
+
+        JPanel tabsPanel = new JPanel(new BorderLayout());
         tabbedPane = new JTabbedPane();
-        initViewScheduleTab();
-        initRegistrationTab();
         
-        contentPanel.add(tabbedPane, BorderLayout.CENTER);
+        initAvailableSeminarsTab();
+        initRegisteredSeminarsTab();
+        initGradesTab(); 
+        
+        tabsPanel.add(tabbedPane, BorderLayout.CENTER);
+
+        initFormView();
+
+        mainContainer.add(tabsPanel, "TABS");
+        mainContainer.add(formPanel, "FORM");
+
+        contentPanel.add(mainContainer, BorderLayout.CENTER);
     }
-    
-    private void initViewScheduleTab() {
+
+    private void initAvailableSeminarsTab() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        // Create table for schedule
-        String[] columns = {"Session ID", "Session Name", "Date", "Time", "Venue", "Type", "Track"};
-        scheduleModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+
+        String[] columns = {"Session ID", "Session Name", "Date", "Time", "Action"};
+        availableModel = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return column == 4; }
         };
-        
-        scheduleTable = new JTable(scheduleModel);
-        scheduleTable.setRowHeight(25);
-        
-        // Load schedule
-        loadSchedule();
-        
-        panel.add(new JScrollPane(scheduleTable), BorderLayout.CENTER);
-        
-        // Add refresh button
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton refreshBtn = new JButton("Refresh Schedule");
-        refreshBtn.addActionListener(e -> loadSchedule());
-        buttonPanel.add(refreshBtn);
-        
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        tabbedPane.addTab("View Schedule", panel);
+
+        availableTable = new JTable(availableModel);
+        availableTable.setRowHeight(35);
+        availableTable.getColumn("Action").setCellRenderer(new ButtonRenderer());
+        availableTable.getColumn("Action").setCellEditor(new ButtonEditor(new JCheckBox()));
+
+        panel.add(new JScrollPane(availableTable), BorderLayout.CENTER);
+
+        JButton refreshBtn = new JButton("Refresh List");
+        refreshBtn.addActionListener(e -> refreshAllData());
+        panel.add(refreshBtn, BorderLayout.SOUTH);
+
+        tabbedPane.addTab("Available Seminars", panel);
+        loadAvailableSessions();
     }
-    
-    private void loadSchedule() {
-        scheduleModel.setRowCount(0);
+
+    private void initRegisteredSeminarsTab() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        String[] columns = {"Session ID", "My Title", "Status", "Edit", "Unregister"};
+        registeredModel = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return column == 3 || column == 4; }
+        };
+
+        registeredTable = new JTable(registeredModel);
+        registeredTable.setRowHeight(35);
+        registeredTable.getColumn("Edit").setCellRenderer(new ButtonRenderer());
+        registeredTable.getColumn("Edit").setCellEditor(new EditButtonEditor(new JCheckBox()));
+        registeredTable.getColumn("Unregister").setCellRenderer(new ButtonRenderer());
+        registeredTable.getColumn("Unregister").setCellEditor(new UnregisterButtonEditor(new JCheckBox()));
+
+        panel.add(new JScrollPane(registeredTable), BorderLayout.CENTER);
+        tabbedPane.addTab("My Registrations", panel);
+        loadMyRegistration();
+    }
+
+    private void initGradesTab() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Added "Feedback" column
+        String[] columns = {"Session ID", "Session Name", "Total Grade", "Awards Earned", "Feedback"};
+        gradesModel = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return column == 4; } 
+        };
+
+        gradesTable = new JTable(gradesModel);
+        gradesTable.setRowHeight(35);
         
-        File file = new File("./src/saved/sessions.txt");
-        if (!file.exists()) {
-            scheduleModel.addRow(new Object[]{"No schedule", "available", "", "", "", "", ""});
-            return;
-        }
+        gradesTable.getColumnModel().getColumn(3).setPreferredWidth(150);
+        gradesTable.getColumn("Feedback").setCellRenderer(new ViewFeedbackButtonRenderer());
+        gradesTable.getColumn("Feedback").setCellEditor(new ViewFeedbackButtonEditor(new JCheckBox()));
+
+        panel.add(new JScrollPane(gradesTable), BorderLayout.CENTER);
         
+        JLabel info = new JLabel("Click 'View Comment' to see detailed rubric scores and evaluator comments.");
+        info.setFont(new Font("Arial", Font.ITALIC, 12));
+        panel.add(info, BorderLayout.SOUTH);
+
+        tabbedPane.addTab("Grades & Awards", panel);
+        loadGradesAndAwards();
+    }
+
+    private void refreshAllData() {
+        myRegistrations = UserDatabase.getStudentRegistrations(userId);
+        loadAvailableSessions();
+        loadMyRegistration();
+        loadGradesAndAwards();
+    }
+
+    private void loadAvailableSessions() {
+        availableModel.setRowCount(0);
+        File file = new File("saved/sessions.txt"); 
+        if (!file.exists()) return;
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty() || line.startsWith("Schedule:") || line.startsWith("----")) {
-                    continue;
-                }
-                
-                String[] parts = line.split("\\|");
-                if (parts.length >= 9) {
-                    scheduleModel.addRow(new Object[]{
-                        parts[0],  // Session ID
-                        parts[1],  // Session Name
-                        parts[4],  // Date
-                        parts[6] + " - " + parts[7],  // Time
-                        parts[5],  // Venue
-                        parts[2],  // Type
-                        parts[3]   // Track
-                    });
+                if (line.startsWith("Schedule:") || line.startsWith("----") || line.trim().isEmpty()) continue;
+                String[] p = line.split("\\|");
+                if (p.length >= 8) {
+                    String sessionId = p[0];
+                    String actionLabel = "Register";
+                    for(Student s : myRegistrations) { if(s.getSessionId().equals(sessionId)) { actionLabel = "Registered"; break; } }
+                    availableModel.addRow(new Object[]{ sessionId, p[1], p[4], p[6] + "-" + p[7], actionLabel });
                 }
             }
-        } catch (Exception e) {
-            scheduleModel.addRow(new Object[]{"Error", "loading schedule", "", "", "", "", ""});
+        } catch (Exception e) {}
+    }
+
+    private void loadMyRegistration() {
+        registeredModel.setRowCount(0);
+        myRegistrations = UserDatabase.getStudentRegistrations(userId); 
+        for(Student s : myRegistrations) {
+            registeredModel.addRow(new Object[]{ s.getSessionId(), s.getResearchTitle(), "Confirmed", "Edit", "Unregister" });
         }
     }
-    
-    private void initRegistrationTab() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        
-        // Create form panel
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBorder(BorderFactory.createTitledBorder(" Seminar Registration "));
-        
+
+    private void loadGradesAndAwards() {
+        gradesModel.setRowCount(0);
+        for(Student s : myRegistrations) {
+            String sessionId = s.getSessionId();
+            String[] sessionDetails = UserDatabase.getSessionDetails(sessionId);
+            String sessionName = sessionDetails[0];
+
+            double sessionGrade = 0.0;
+            boolean hasGrade = false;
+            try {
+                // Now works because UserDatabase has getEvaluationDetails
+                List<UserDatabase.EvaluationDetail> details = UserDatabase.getEvaluationDetails(sessionId, userId);
+                if(!details.isEmpty()) {
+                    double sum = 0;
+                    for(UserDatabase.EvaluationDetail d : details) sum += d.total;
+                    sessionGrade = sum / details.size();
+                    hasGrade = true;
+                }
+            } catch(Exception e) {}
+
+            String gradeDisplay = hasGrade ? String.format("%.2f / 40", sessionGrade) : "Pending";
+            String awardName = UserDatabase.getAwardForStudent(userId, sessionId);
+            String awardDisplay = (awardName != null) ? "🏆 " + awardName : "-";
+
+            gradesModel.addRow(new Object[]{ sessionId, sessionName, gradeDisplay, awardDisplay, "View Comment" });
+        }
+    }
+
+    private void initFormView() {
+        formPanel = new JPanel(new BorderLayout(20, 20));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
+        JPanel fieldsPanel = new JPanel(new GridBagLayout());
+        fieldsPanel.setBorder(BorderFactory.createTitledBorder(" Registration Details "));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
         
-        // Student ID (read-only)
-        idField = new JTextField(currentStudent.getStudentId());
-        idField.setEditable(false);
-        idField.setBackground(new Color(240, 240, 240));
-        
-        // Name (read-only)
-        nameField = new JTextField(currentStudent.getName());
-        nameField.setEditable(false);
-        nameField.setBackground(new Color(240, 240, 240));
-        
-        // Research Title
-        titleField = new JTextField(currentStudent.getResearchTitle().equals("None") ? "" : currentStudent.getResearchTitle());
-        
-        // Abstract
-        abstractArea = new JTextArea(currentStudent.getAbstractText().equals("None") ? "" : currentStudent.getAbstractText(), 4, 20);
-        abstractArea.setLineWrap(true);
-        JScrollPane abstractScroll = new JScrollPane(abstractArea);
-        
-        // Supervisor
-        supervisorField = new JTextField(currentStudent.getSupervisor().equals("None") ? "" : currentStudent.getSupervisor());
-        
-        // Presentation Type
-        typeBox = new JComboBox<>(new String[]{"Oral Presentation", "Poster Presentation"});
-        if (!currentStudent.getPresentationType().equals("None")) {
-            typeBox.setSelectedItem(currentStudent.getPresentationType());
-        }
-        
-        // Session Selection
-        sessionBox = new JComboBox<>();
-        loadAvailableSessions();
-        
-        // Board ID
-        boardIdField = new JTextField(currentStudent.getBoardId().equals("None") ? "" : currentStudent.getBoardId());
-        
-        // File upload section
+        sessionDisplayField = new JTextField(); sessionDisplayField.setEditable(false);
+        boardIdField = new JTextField(); boardIdField.setEditable(false);
+        titleField = new JTextField();
+        String[] abstractOptions = {"-- Select Abstract --", "Artificial Intelligence", "IoT & Smart Systems", "Cybersecurity", "Data Science", "Software Engineering"};
+        abstractBox = new JComboBox<>(abstractOptions);
+        supervisorBox = new JComboBox<>();
+        typeBox = new JComboBox<>(new String[]{"Oral Presentation", "Poster Presentation", "Demo Session"});
         filePathLabel = new JLabel("No file uploaded");
-        if (!currentStudent.getSubmissionPath().equals("None")) {
-            filePathLabel.setText("Current: " + currentStudent.getSubmissionPath());
-            uploadedFilePath = currentStudent.getSubmissionPath();
-        }
-        
-        uploadBtn = new JButton("Upload/Change Materials");
-        uploadBtn.addActionListener(e -> uploadFile());
-        
-        submitBtn = new JButton("Submit Registration");
-        submitBtn.addActionListener(e -> submitRegistration());
-        
-        // Add form fields
-        addFormField(formPanel, "Student ID:", idField, gbc);
-        addFormField(formPanel, "Name:", nameField, gbc);
-        addFormField(formPanel, "Research Title:", titleField, gbc);
-        addFormField(formPanel, "Abstract:", abstractScroll, gbc);
-        addFormField(formPanel, "Supervisor:", supervisorField, gbc);
-        addFormField(formPanel, "Presentation Type:", typeBox, gbc);
-        addFormField(formPanel, "Select Session:", sessionBox, gbc);
-        addFormField(formPanel, "Board ID:", boardIdField, gbc);
-        
-        // File upload row
-        gbc.gridx = 0;
-        gbc.gridy++;
-        formPanel.add(new JLabel("Upload Materials:"), gbc);
-        
-        gbc.gridx = 1;
-        JPanel uploadPanel = new JPanel(new BorderLayout(5, 5));
-        uploadPanel.add(filePathLabel, BorderLayout.CENTER);
-        uploadPanel.add(uploadBtn, BorderLayout.EAST);
-        formPanel.add(uploadPanel, gbc);
-        
-        // Submit button row
-        gbc.gridx = 0;
-        gbc.gridy++;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        formPanel.add(submitBtn, gbc);
-        
-        panel.add(formPanel, BorderLayout.NORTH);
-        
-        // Add info panel
-        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        infoPanel.add(new JLabel("Note: Board ID is required for poster presentations"));
-        panel.add(infoPanel, BorderLayout.SOUTH);
-        
-        tabbedPane.addTab("Register & Upload", panel);
+        uploadBtn = new JButton("Upload File");
+        uploadBtn.addActionListener(e -> handleFileUpload());
+
+        addFormRow(fieldsPanel, "Session:", sessionDisplayField, gbc, 0);
+        addFormRow(fieldsPanel, "Board ID:", boardIdField, gbc, 1);
+        addFormRow(fieldsPanel, "Research Title:", titleField, gbc, 2);
+        addFormRow(fieldsPanel, "Abstract Category:", abstractBox, gbc, 3);
+        addFormRow(fieldsPanel, "Supervisor:", supervisorBox, gbc, 4);
+        addFormRow(fieldsPanel, "Presentation:", typeBox, gbc, 5); 
+        addFormRow(fieldsPanel, "File:", uploadBtn, gbc, 6);
+        gbc.gridx = 1; gbc.gridy = 7; fieldsPanel.add(filePathLabel, gbc);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        saveBtn = new JButton("Submit");
+        cancelBtn = new JButton("Cancel");
+        saveBtn.addActionListener(e -> submitForm());
+        cancelBtn.addActionListener(e -> { refreshAllData(); cardLayout.show(mainContainer, "TABS"); });
+        btnPanel.add(cancelBtn); btnPanel.add(saveBtn);
+
+        formPanel.add(fieldsPanel, BorderLayout.CENTER);
+        formPanel.add(btnPanel, BorderLayout.SOUTH);
     }
-    
-    private void addFormField(JPanel panel, String label, JComponent field, GridBagConstraints gbc) {
-        gbc.gridx = 0;
-        panel.add(new JLabel(label), gbc);
-        
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        panel.add(field, gbc);
-        
-        gbc.gridy++;
-        gbc.weightx = 0.0;
+
+    private void addFormRow(JPanel p, String label, JComponent c, GridBagConstraints gbc, int y) {
+        gbc.gridx = 0; gbc.gridy = y; gbc.weightx = 0; p.add(new JLabel(label), gbc);
+        gbc.gridx = 1; gbc.weightx = 1; p.add(c, gbc);
     }
-    
-    private void loadAvailableSessions() {
-        sessionBox.removeAllItems();
-        sessionBox.addItem("-- Select a Session --");
-        
-        List<String> sessions = UserDatabase.getAllAvailableSessions();
-        for (String session : sessions) {
-            sessionBox.addItem(session);
-        }
-        
-        // If student already registered for a session, select it
-        if (!currentStudent.getSessionId().equals("None")) {
-            String currentSession = currentStudent.getSessionId();
-            for (int i = 0; i < sessionBox.getItemCount(); i++) {
-                String item = sessionBox.getItemAt(i);
-                if (item.startsWith(currentSession + " - ")) {
-                    sessionBox.setSelectedIndex(i);
-                    break;
-                }
-            }
+
+    private void openRegistrationForm(String sessionId) {
+        loadSupervisors();
+        targetSessionIdForRegistration = sessionId;
+        sessionDisplayField.setText(sessionId);
+        boardIdField.setText("BID-" + (new Random().nextInt(900) + 100)); 
+        titleField.setText("");
+        abstractBox.setSelectedIndex(0);
+        supervisorBox.setSelectedIndex(0);
+        uploadedFilePath = "None";
+        filePathLabel.setText("No file");
+        saveBtn.setText("Register");
+        cardLayout.show(mainContainer, "FORM");
+    }
+
+    private void openEditForm(String sessionId) {
+        loadSupervisors();
+        targetSessionIdForRegistration = sessionId;
+        Student target = null;
+        for(Student s : myRegistrations) { if(s.getSessionId().equals(sessionId)) { target = s; break; } }
+        if(target != null) {
+            sessionDisplayField.setText(sessionId);
+            boardIdField.setText(target.getBoardId());
+            titleField.setText(target.getResearchTitle());
+            typeBox.setSelectedItem(target.getPresentationType());
+            setBoxItem(abstractBox, target.getAbstractText());
+            setBoxItem(supervisorBox, target.getSupervisor());
+            uploadedFilePath = target.getSubmissionPath();
+            filePathLabel.setText(uploadedFilePath);
+            saveBtn.setText("Save Changes");
+            cardLayout.show(mainContainer, "FORM");
         }
     }
-    
-    private void uploadFile() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Select Presentation File");
-        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        
-        int result = chooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = chooser.getSelectedFile();
-            String fileName = selectedFile.getName();
-            
-            // Validate file type
-            if (!fileName.toLowerCase().endsWith(".pdf") && !fileName.toLowerCase().endsWith(".pptx")) {
-                JOptionPane.showMessageDialog(this, 
-                    "Only PDF and PPTX files are allowed.",
-                    "Invalid File Type",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            uploadedFilePath = selectedFile.getAbsolutePath();
-            filePathLabel.setText(fileName);
-            
-            JOptionPane.showMessageDialog(this,
-                "File selected: " + fileName + "\nFile will be uploaded when you submit registration.",
-                "File Selected",
-                JOptionPane.INFORMATION_MESSAGE);
+
+    private void submitForm() {
+        if (titleField.getText().isEmpty()) { JOptionPane.showMessageDialog(this, "Title Required"); return; }
+        Student reg = new Student(currentProfile.getStudentId(), currentProfile.getPassword(), currentProfile.getName(), titleField.getText(),          
+            (String) abstractBox.getSelectedItem(), (String) supervisorBox.getSelectedItem(), (String) typeBox.getSelectedItem(), uploadedFilePath);
+        reg.setSessionId(targetSessionIdForRegistration);
+        reg.setBoardId(boardIdField.getText());
+        UserDatabase.saveStudentRegistration(reg);
+        JOptionPane.showMessageDialog(this, "Saved Successfully!");
+        refreshAllData();
+        cardLayout.show(mainContainer, "TABS");
+    }
+
+    private void unregister(String sessionId) {
+        if (JOptionPane.showConfirmDialog(this, "Unregister from " + sessionId + "?", "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+            UserDatabase.unregisterStudent(userId, sessionId);
+            refreshAllData();
         }
     }
-    
-    private void submitRegistration() {
-        // Validate session selection
-        String selectedSessionItem = (String) sessionBox.getSelectedItem();
-        if (selectedSessionItem == null || selectedSessionItem.equals("-- Select a Session --")) {
-            JOptionPane.showMessageDialog(this, "Please select a session.");
+
+    private void setBoxItem(JComboBox<String> box, String val) { for(int i=0; i<box.getItemCount(); i++) if(box.getItemAt(i).equals(val)) box.setSelectedIndex(i); }
+    private void loadSupervisors() { supervisorBox.removeAllItems(); supervisorBox.addItem("-- Select --"); File f = new File("saved/evaluators.txt"); try(BufferedReader br = new BufferedReader(new FileReader(f))){ String l; while((l=br.readLine())!=null) { String[] p=l.split("\\|"); if(p.length>2) supervisorBox.addItem(p[2]); } } catch(Exception e){} }
+    private void handleFileUpload() { JFileChooser c = new JFileChooser(); if(c.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) { uploadedFilePath = c.getSelectedFile().getAbsolutePath(); filePathLabel.setText(c.getSelectedFile().getName()); } }
+
+    private void showFeedbackDialog(String sessionId, String sessionName) {
+        JDialog dialog = new JDialog(this, "Detailed Feedback - " + sessionName, true);
+        dialog.setSize(600, 500);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+
+        // Using the new methods in UserDatabase
+        List<UserDatabase.EvaluationDetail> details = UserDatabase.getEvaluationDetails(sessionId, userId);
+        
+        if (details.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No evaluations submitted yet.");
             return;
         }
-        
-        // Extract session ID
-        String sessionId = selectedSessionItem.split(" - ")[0];
-        
-        // Validate session exists
-        if (!UserDatabase.sessionExists(sessionId)) {
-            JOptionPane.showMessageDialog(this, "Selected session no longer exists.");
-            loadAvailableSessions();
-            return;
+
+        double[] avgScores = new double[4];
+        for (UserDatabase.EvaluationDetail d : details) {
+            for (int i = 0; i < 4; i++) avgScores[i] += d.scores[i];
         }
+        for (int i = 0; i < 4; i++) avgScores[i] /= details.size();
+
+        JPanel summaryPanel = new JPanel(new GridLayout(2, 4, 10, 10));
+        summaryPanel.setBorder(BorderFactory.createTitledBorder(" Average Scores by Criteria (Max 10) "));
+        String[] criteria = {"Problem Clarity", "Methodology", "Results", "Presentation"};
         
-        // Validate board ID
-        if (boardIdField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter a Board ID.");
-            return;
+        for (int i = 0; i < 4; i++) {
+            JPanel p = new JPanel(new BorderLayout());
+            p.add(new JLabel(criteria[i], SwingConstants.CENTER), BorderLayout.NORTH);
+            JLabel scoreLbl = new JLabel(String.format("%.2f", avgScores[i]), SwingConstants.CENTER);
+            scoreLbl.setFont(new Font("Arial", Font.BOLD, 18));
+            scoreLbl.setForeground(new Color(60, 120, 180));
+            p.add(scoreLbl, BorderLayout.CENTER);
+            summaryPanel.add(p);
         }
+
+        JPanel commentsPanel = new JPanel();
+        commentsPanel.setLayout(new BoxLayout(commentsPanel, BoxLayout.Y_AXIS));
         
-        // Create updated student object
-        Student updatedStudent = new Student(
-            currentStudent.getStudentId(),
-            currentStudent.getPassword(),
-            currentStudent.getName(),
-            titleField.getText().trim(),
-            abstractArea.getText().trim(),
-            supervisorField.getText().trim(),
-            (String) typeBox.getSelectedItem(),
-            uploadedFilePath != null ? uploadedFilePath : currentStudent.getSubmissionPath()
-        );
-        
-        updatedStudent.setSessionId(sessionId);
-        updatedStudent.setBoardId(boardIdField.getText().trim());
-        
-        // Validate input
-        if (RegistrationController.validateInput(updatedStudent)) {
-            // Ask for confirmation
-            int confirm = JOptionPane.showConfirmDialog(this,
-                "Confirm Registration:\n" +
-                "Session: " + selectedSessionItem + "\n" +
-                "Board ID: " + boardIdField.getText().trim() + "\n" +
-                "File: " + (uploadedFilePath != null ? "Will be uploaded" : "No change"),
-                "Confirm Registration",
-                JOptionPane.YES_NO_OPTION);
+        for (UserDatabase.EvaluationDetail d : details) {
+            JPanel card = new JPanel(new BorderLayout(5, 5));
+            card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(5, 5, 5, 5),
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY)
+            ));
             
-            if (confirm == JOptionPane.YES_OPTION) {
-                RegistrationController.registerStudent(updatedStudent);
-                
-                // Update current student reference
-                currentStudent = updatedStudent;
-                
-                JOptionPane.showMessageDialog(this,
-                    "Registration successful!\n" +
-                    "Session: " + sessionId + "\n" +
-                    "Board ID: " + boardIdField.getText().trim(),
-                    "Registration Complete",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Refresh available sessions
-                loadAvailableSessions();
-            }
-        } else {
-            JOptionPane.showMessageDialog(this,
-                "Please fill in all required fields:\n" +
-                "- Research Title\n" +
-                "- Abstract\n" +
-                "- Supervisor\n" +
-                "- Session Selection\n" +
-                "- Board ID",
-                "Incomplete Form",
-                JOptionPane.WARNING_MESSAGE);
+            JLabel nameLbl = new JLabel("Evaluator: " + d.evaluatorName + " (Total: " + d.total + "/40)");
+            nameLbl.setFont(new Font("Arial", Font.BOLD, 12));
+            
+            JTextArea commentText = new JTextArea(d.comment);
+            commentText.setLineWrap(true);
+            commentText.setWrapStyleWord(true);
+            commentText.setEditable(false);
+            commentText.setBackground(new Color(245, 245, 245));
+            commentText.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+            card.add(nameLbl, BorderLayout.NORTH);
+            card.add(commentText, BorderLayout.CENTER);
+            commentsPanel.add(card);
+            commentsPanel.add(Box.createVerticalStrut(10));
+        }
+
+        dialog.add(summaryPanel, BorderLayout.NORTH);
+        dialog.add(new JScrollPane(commentsPanel), BorderLayout.CENTER);
+        
+        JButton closeBtn = new JButton("Close");
+        closeBtn.addActionListener(e -> dialog.dispose());
+        dialog.add(closeBtn, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+    }
+
+    class ViewFeedbackButtonRenderer extends JButton implements TableCellRenderer {
+        public ViewFeedbackButtonRenderer() { setOpaque(true); }
+        public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+            setText("View Comment"); 
+            setBackground(new Color(100, 149, 237)); setForeground(Color.WHITE);
+            return this;
+        }
+    }
+    class ViewFeedbackButtonEditor extends DefaultCellEditor {
+        public ViewFeedbackButtonEditor(JCheckBox c) { super(c); }
+        public Component getTableCellEditorComponent(JTable t, Object v, boolean s, int r, int c) {
+            JButton b = new JButton("View Comment");
+            b.setBackground(new Color(100, 149, 237)); b.setForeground(Color.WHITE);
+            b.addActionListener(e -> {
+                fireEditingStopped();
+                String sessionId = (String) t.getValueAt(r, 0);
+                String sessionName = (String) t.getValueAt(r, 1);
+                showFeedbackDialog(sessionId, sessionName);
+            });
+            return b;
+        }
+    }
+
+    class ButtonRenderer extends JButton implements TableCellRenderer {
+        public ButtonRenderer() { setOpaque(true); }
+        public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+            setText((v==null)?"":v.toString());
+            setEnabled(!getText().equals("Registered") && !getText().equals("Locked"));
+            return this;
+        }
+    }
+    class ButtonEditor extends DefaultCellEditor {
+        public ButtonEditor(JCheckBox c) { super(c); }
+        public Component getTableCellEditorComponent(JTable t, Object v, boolean s, int r, int c) {
+            String label = (v==null)?"":v.toString(); JButton b = new JButton(label);
+            b.setEnabled(!label.equals("Registered"));
+            b.addActionListener(e -> { fireEditingStopped(); if(label.equals("Register")) openRegistrationForm(t.getValueAt(r, 0).toString()); });
+            return b;
+        }
+    }
+    class EditButtonEditor extends DefaultCellEditor {
+        public EditButtonEditor(JCheckBox c) { super(c); }
+        public Component getTableCellEditorComponent(JTable t, Object v, boolean s, int r, int c) {
+            JButton b = new JButton("Edit");
+            b.addActionListener(e -> { fireEditingStopped(); openEditForm(t.getValueAt(r, 0).toString()); });
+            return b;
+        }
+    }
+    class UnregisterButtonEditor extends DefaultCellEditor {
+        public UnregisterButtonEditor(JCheckBox c) { super(c); }
+        public Component getTableCellEditorComponent(JTable t, Object v, boolean s, int r, int c) {
+            JButton b = new JButton("Unregister");
+            b.addActionListener(e -> { fireEditingStopped(); unregister(t.getValueAt(r, 0).toString()); });
+            return b;
         }
     }
 }

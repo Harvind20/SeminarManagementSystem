@@ -1,7 +1,11 @@
 package coordinator;
+
+import evaluator.Evaluator;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -12,9 +16,6 @@ import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
-
-import coordinator.Session.PresentationSlot;
-import evaluator.Evaluator;
 import misc.Dashboard;
 import misc.UserDatabase;
 import misc.UserDatabase.StudentGrade;
@@ -36,15 +37,13 @@ public class CoordinatorDashboard extends Dashboard {
     private JTable scheduleTable;
     private DefaultTableModel scheduleModel;
     
-    // NEW: Components for Award Nomination tab
     private JTable seminarsTable;
     private DefaultTableModel seminarsModel;
     private JPanel awardMainPanel;
-    private CardLayout awardCardLayout;
 
     public CoordinatorDashboard(String userId) {
-        super(userId, "Coordinator Dashboard - FCSIT Seminar System");
-        setSize(1100, 700); // Increased height for new tab
+        super(userId, "Coordinator Dashboard - Seminar System");
+        setSize(1300, 800); // Increased size for comments
         setLocationRelativeTo(null);
     }
 
@@ -55,11 +54,14 @@ public class CoordinatorDashboard extends Dashboard {
         tabbedPane = new JTabbedPane();
         initSessionTab();   
         initScheduleTab();  
-        initAwardNominationTab(); // NEW: Award Nomination tab
+        initAwardNominationTab(); 
 
         contentPanel.add(tabbedPane, BorderLayout.CENTER);
     }
 
+    // ==========================================
+    // TAB 1: MANAGE SESSIONS
+    // ==========================================
     private void initSessionTab() {
         JPanel panel = new JPanel(new BorderLayout(15, 15));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -74,9 +76,9 @@ public class CoordinatorDashboard extends Dashboard {
         gbc.gridx = 0; gbc.gridy = 0;
 
         txtId = new JTextField();
-        txtId.setEditable(false); // Make ID field read-only
+        txtId.setEditable(false);
         txtId.setBackground(new Color(240, 240, 240));
-        txtId.setText(sessionManager.generateSessionId()); // Auto-generate initial ID
+        txtId.setText(sessionManager.generateSessionId());
         
         txtName = new JTextField();
         txtVenue = new JTextField("DTC Hall");
@@ -119,13 +121,15 @@ public class CoordinatorDashboard extends Dashboard {
         gbc.insets = new Insets(15, 5, 5, 5);
         formPanel.add(btnCreate, gbc);
 
-        // RIGHT SIDE: Table
         String[] cols = {"ID", "Name", "Type", "Date", "Venue", "Time"};
         sessionsModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         sessionsTable = new JTable(sessionsModel);
         sessionsTable.setRowHeight(25);
+        
+        // Thinner ID Column
+        sessionsTable.getColumnModel().getColumn(0).setPreferredWidth(40);
         
         refreshSessionTable(); 
 
@@ -135,6 +139,16 @@ public class CoordinatorDashboard extends Dashboard {
         panel.add(new JScrollPane(sessionsTable), BorderLayout.CENTER);
 
         tabbedPane.addTab("Manage Sessions", panel);
+    }
+
+    private void refreshSessionTable() {
+        sessionsModel.setRowCount(0);
+        for (Session s : sessionManager.getAllSessions()) {
+            sessionsModel.addRow(new Object[]{
+                s.getSessionId(), s.getSessionName(), s.getSessionType(),
+                s.getDate(), s.getVenue(), s.getStartTime() + " - " + s.getEndTime()
+            });
+        }
     }
 
     private void addFormField(JPanel p, String label, JComponent field, GridBagConstraints gbc) {
@@ -153,7 +167,6 @@ public class CoordinatorDashboard extends Dashboard {
 
     private void createSessionAction() {
         try {
-            // Validate required fields
             if (txtName.getText().trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Session Name is required!");
                 return;
@@ -175,10 +188,8 @@ public class CoordinatorDashboard extends Dashboard {
                 return;
             }
 
-            // Generate new session ID
             String newSessionId = sessionManager.generateSessionId();
             
-            // Create session with auto-generated ID
             Session createdSession = sessionManager.createSession(
                 newSessionId, 
                 txtName.getText().trim(), 
@@ -193,12 +204,8 @@ public class CoordinatorDashboard extends Dashboard {
 
             refreshSessionTable();
             refreshSessionSelector();
-            refreshSeminarsTable(); // Refresh award nomination tab
             
-            // Generate new ID for next session
             txtId.setText(sessionManager.generateSessionId());
-            
-            // Clear other fields but keep ID for next session
             txtName.setText("");
             txtVenue.setText("DTC Hall");
             cbType.setSelectedIndex(0);
@@ -218,16 +225,9 @@ public class CoordinatorDashboard extends Dashboard {
         }
     }
 
-    private void refreshSessionTable() {
-        sessionsModel.setRowCount(0);
-        for (Session s : sessionManager.getAllSessions()) {
-            sessionsModel.addRow(new Object[]{
-                s.getSessionId(), s.getSessionName(), s.getSessionType(),
-                s.getDate(), s.getVenue(), s.getStartTime() + " - " + s.getEndTime()
-            });
-        }
-    }
-
+    // ==========================================
+    // TAB 2: SESSION SCHEDULE
+    // ==========================================
     private void initScheduleTab() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -285,24 +285,19 @@ public class CoordinatorDashboard extends Dashboard {
 
         scheduleModel.setRowCount(0);
 
-        // Get students registered for THIS session only
         List<Student> sessionStudents = sessionManager.getStudentsBySession(selected.getSessionId());
         
         JComboBox<Student> studentBox = new JComboBox<>();
-        studentBox.addItem(null); // Empty option
+        studentBox.addItem(null);
         
         if (sessionStudents.isEmpty()) {
-            // If no students registered, show a disabled option
             studentBox.addItem(new Student("No students", "registered for this session", 
-                                          "None", "None", "None", "None") {
+                                            "None", "None", "None", "None") {
                 @Override
-                public String toString() {
-                    return "No students registered for this session";
-                }
+                public String toString() { return "No students registered for this session"; }
             });
             studentBox.setEnabled(false);
         } else {
-            // Add students who registered for this session
             for (Student s : sessionStudents) {
                 studentBox.addItem(s);
             }
@@ -320,12 +315,11 @@ public class CoordinatorDashboard extends Dashboard {
             });
         }
         
-        // Show info about available students
         if (!sessionStudents.isEmpty()) {
             String info = "Note: Showing " + sessionStudents.size() + 
                          " student(s) registered for " + selected.getSessionId();
             JOptionPane.showMessageDialog(this, info, "Session Students", 
-                                        JOptionPane.INFORMATION_MESSAGE);
+                                            JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -335,13 +329,9 @@ public class CoordinatorDashboard extends Dashboard {
 
         Object value = scheduleModel.getValueAt(row, 1);
         
-        // Don't update if "No students registered for this session" is selected
         if (value instanceof Student) {
             Student s = (Student) value;
-            // Check if it's the placeholder student
-            if (s.getStudentId().equals("No students")) {
-                return;
-            }
+            if (s.getStudentId().equals("No students")) return;
             
             List<Evaluator> currentEvaluators = selected.getSchedule().get(row).getEvaluators();
             sessionManager.updateSlotAssignment(selected, row, s, currentEvaluators);
@@ -385,11 +375,12 @@ public class CoordinatorDashboard extends Dashboard {
         }
     }
     
-    // NEW: Initialize Award Nomination tab
+    // ==========================================
+    // TAB 3: AWARD NOMINATION (UPDATED)
+    // ==========================================
     private void initAwardNominationTab() {
         awardMainPanel = new JPanel(new CardLayout());
         
-        // Card 1: Seminar List
         JPanel seminarListPanel = createSeminarListPanel();
         
         awardMainPanel.add(seminarListPanel, "SEMINAR_LIST");
@@ -401,41 +392,27 @@ public class CoordinatorDashboard extends Dashboard {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         
-        // Title
         JLabel titleLabel = new JLabel("Select a Seminar to Nominate Awards");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
         panel.add(titleLabel, BorderLayout.NORTH);
         
-        // Create table for seminars
         String[] columns = {"Session ID", "Session Name", "Date", "Type", "Select"};
         seminarsModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 4; // Only Select column is editable
-            }
-            
-            @Override
-            public Class<?> getColumnClass(int column) {
-                if (column == 4) {
-                    return JButton.class;
-                }
-                return String.class;
-            }
+            @Override public boolean isCellEditable(int row, int column) { return column == 4; }
+            @Override public Class<?> getColumnClass(int column) { return column == 4 ? JButton.class : String.class; }
         };
         
         seminarsTable = new JTable(seminarsModel);
         seminarsTable.setRowHeight(40);
+        seminarsTable.getColumnModel().getColumn(0).setPreferredWidth(60); 
         
-        // Load seminars
         refreshSeminarsTable();
         
-        // Add button renderer and editor for Select column
         seminarsTable.getColumn("Select").setCellRenderer(new ButtonRenderer("View Students"));
         seminarsTable.getColumn("Select").setCellEditor(new ButtonEditor(new JCheckBox()));
         
         panel.add(new JScrollPane(seminarsTable), BorderLayout.CENTER);
         
-        // Info panel
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         infoPanel.add(new JLabel("Click 'View Students' to see evaluations and nominate awards"));
         panel.add(infoPanel, BorderLayout.SOUTH);
@@ -445,334 +422,240 @@ public class CoordinatorDashboard extends Dashboard {
     
     private void refreshSeminarsTable() {
         seminarsModel.setRowCount(0);
-        
         List<Session> allSessions = sessionManager.getAllSessions();
         for (Session session : allSessions) {
             seminarsModel.addRow(new Object[]{
-                session.getSessionId(),
-                session.getSessionName(),
-                session.getDate().toString(),
-                session.getSessionType(),
-                "View Students"
+                session.getSessionId(), session.getSessionName(),
+                session.getDate().toString(), session.getSessionType(), "View Students"
             });
         }
-        
         if (allSessions.isEmpty()) {
             seminarsModel.addRow(new Object[]{"No seminars", "available", "", "", ""});
         }
     }
     
-    // Button Renderer for Select column
-    class ButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
-        private String buttonText;
-        
-        public ButtonRenderer(String text) {
-            this.buttonText = text;
-            setOpaque(true);
-        }
-        
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-            setText(buttonText);
-            
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(new Color(60, 120, 180)); // Blue color
-                setForeground(Color.WHITE);
-            }
-            
-            return this;
-        }
-    }
-    
-    // Button Editor for Select column
-    class ButtonEditor extends DefaultCellEditor {
-        private JButton button;
-        private String label;
-        private boolean isClicked;
-        
-        public ButtonEditor(JCheckBox checkBox) {
-            super(checkBox);
-            button = new JButton();
-            button.setOpaque(true);
-            button.addActionListener(e -> fireEditingStopped());
-        }
-        
-        public Component getTableCellEditorComponent(JTable table, Object value,
-                boolean isSelected, int row, int column) {
-            label = (value == null) ? "View Students" : value.toString();
-            button.setText(label);
-            button.setBackground(new Color(80, 140, 200)); // Darker blue when clicked
-            button.setForeground(Color.WHITE);
-            isClicked = true;
-            return button;
-        }
-        
-        public Object getCellEditorValue() {
-            if (isClicked) {
-                JTable table = (JTable) SwingUtilities.getAncestorOfClass(JTable.class, button);
-                if (table != null) {
-                    int row = table.getEditingRow();
-                    if (row >= 0) {
-                        String sessionId = (String) table.getValueAt(row, 0);
-                        String sessionName = (String) table.getValueAt(row, 1);
+    private String getAllCommentsForStudent(String sessionId, String studentId) {
+        StringBuilder sb = new StringBuilder("<html>");
+        boolean found = false;
+        try (BufferedReader br = new BufferedReader(new FileReader("./saved/evaluations.csv"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                if (p.length > 8 && p[0].equals(sessionId) && p[1].equals(studentId)) {
+                    String evalId = p[2];
+                    String comment = p[8].trim();
+                    if (!comment.isEmpty() && !comment.equals("null")) {
+                        Evaluator ev = UserDatabase.getEvaluatorById(evalId);
+                        String evalName = (ev != null) ? ev.getName() : evalId;
                         
-                        // Switch to student list panel
-                        showStudentListPanel(sessionId, sessionName);
+                        if (found) sb.append("<br><br>"); // Add vertical space for readability
+                        sb.append("<b>").append(evalName).append(":</b> ").append(comment);
+                        found = true;
                     }
                 }
             }
-            isClicked = false;
-            return label;
-        }
+        } catch (Exception e) {}
+        if (!found) return "-";
+        return sb.append("</html>").toString();
     }
-    
+
     private void showStudentListPanel(String sessionId, String sessionName) {
-        // Create student list panel
         JPanel studentListPanel = new JPanel(new BorderLayout(10, 10));
         studentListPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         
-        // Title with back button
         JPanel titlePanel = new JPanel(new BorderLayout());
         JLabel titleLabel = new JLabel("Students in: " + sessionName + " (" + sessionId + ")");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
         titlePanel.add(titleLabel, BorderLayout.WEST);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton exportBtn = new JButton("Export Full CSV");
+        exportBtn.setBackground(new Color(0, 102, 204));
+        exportBtn.setForeground(Color.WHITE);
+        exportBtn.addActionListener(e -> {
+            UserDatabase.exportStudentListToCSV(sessionId);
+            JOptionPane.showMessageDialog(this, "Exported successfully to ./saved/ folder.");
+        });
         
         JButton backButton = new JButton("Back to Seminar List");
         backButton.addActionListener(e -> {
             CardLayout cl = (CardLayout) awardMainPanel.getLayout();
             cl.show(awardMainPanel, "SEMINAR_LIST");
         });
-        titlePanel.add(backButton, BorderLayout.EAST);
+        
+        buttonPanel.add(exportBtn);
+        buttonPanel.add(backButton);
+        titlePanel.add(buttonPanel, BorderLayout.EAST);
         
         studentListPanel.add(titlePanel, BorderLayout.NORTH);
         
-        // Create table for students with grades
-        String[] columns = {"Rank", "Student ID", "Student Name", "Average Grade", "Award Status", "Nominate Award"};
+        String[] columns = {"Rank", "ID", "Name", "Avg Grade", "Evaluator Comments", "Award Status", "Nominate"};
+        
         DefaultTableModel studentsModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 5; // Only Nominate Award column is editable
+            @Override public boolean isCellEditable(int row, int column) {
+                if ("No students".equals(getValueAt(row, 2))) return false;
+                return column == 6; 
             }
-            
-            @Override
-            public Class<?> getColumnClass(int column) {
-                if (column == 5) {
-                    return JButton.class;
-                }
-                return String.class;
-            }
+            @Override public Class<?> getColumnClass(int column) { return column == 6 ? JButton.class : String.class; }
         };
         
-        // Get students with grades for this session
         List<StudentGrade> studentGrades = UserDatabase.getStudentsWithGrades(sessionId);
-        
         int rank = 1;
+        
         for (StudentGrade sg : studentGrades) {
             Student student = sg.getStudent();
-            String awardStatus = UserDatabase.hasAward(student.getStudentId(), sessionId) ? 
-                               "Already Awarded" : "No Award";
+            String awardName = UserDatabase.getAwardForStudent(student.getStudentId(), sessionId);
+            String awardDisplay = (awardName != null) ? awardName : "No Award";
+            String allComments = getAllCommentsForStudent(sessionId, student.getStudentId());
             
             studentsModel.addRow(new Object[]{
-                "#" + rank++,
+                "#" + rank++, 
                 student.getStudentId(),
                 student.getName(),
                 sg.getFormattedGrade(),
-                awardStatus,
+                allComments, 
+                awardDisplay,
                 "Nominate"
             });
         }
         
         if (studentGrades.isEmpty()) {
-            studentsModel.addRow(new Object[]{"-", "No students", "with evaluations", "", "", ""});
+            studentsModel.addRow(new Object[]{"-", "-", "No students", "", "", "", ""});
         }
         
         JTable studentsTable = new JTable(studentsModel);
-        studentsTable.setRowHeight(40);
+        studentsTable.setRowHeight(80); // Increased for comments
         
-        // Add button renderer and editor for Nominate column
-        studentsTable.getColumn("Nominate Award").setCellRenderer(new AwardButtonRenderer());
-        studentsTable.getColumn("Nominate Award").setCellEditor(new AwardButtonEditor(new JCheckBox(), sessionId, sessionName));
+        studentsTable.getColumnModel().getColumn(0).setPreferredWidth(35);
+        studentsTable.getColumnModel().getColumn(1).setPreferredWidth(50);
+        studentsTable.getColumnModel().getColumn(2).setPreferredWidth(100);
+        studentsTable.getColumnModel().getColumn(3).setPreferredWidth(60);
+        studentsTable.getColumnModel().getColumn(4).setPreferredWidth(450); // Wide for comments
+        studentsTable.getColumnModel().getColumn(5).setPreferredWidth(150);
+        studentsTable.getColumnModel().getColumn(6).setPreferredWidth(90);
+        
+        studentsTable.getColumn("Nominate").setCellRenderer(new AwardButtonRenderer());
+        studentsTable.getColumn("Nominate").setCellEditor(new AwardButtonEditor(new JCheckBox(), sessionId, sessionName));
         
         studentListPanel.add(new JScrollPane(studentsTable), BorderLayout.CENTER);
         
-        // Info panel
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        infoPanel.add(new JLabel("Students sorted by average evaluation grade (highest to lowest)"));
+        infoPanel.add(new JLabel("Students sorted by average evaluation grade."));
         studentListPanel.add(infoPanel, BorderLayout.SOUTH);
         
-        // Add to card layout
         awardMainPanel.add(studentListPanel, "STUDENT_LIST_" + sessionId);
-        
-        // Show this panel
         CardLayout cl = (CardLayout) awardMainPanel.getLayout();
         cl.show(awardMainPanel, "STUDENT_LIST_" + sessionId);
     }
     
-    // Award Button Renderer
-    class AwardButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
-        public AwardButtonRenderer() {
-            setOpaque(true);
-        }
-        
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-            setText("Nominate");
-            
-            // Check if student already has award
-            String awardStatus = (String) table.getValueAt(row, 4);
-            if ("Already Awarded".equals(awardStatus)) {
-                setEnabled(false);
-                setBackground(Color.GRAY);
-                setText("Awarded");
-            } else {
-                setEnabled(true);
-                setBackground(new Color(60, 180, 120)); // Green color
-            }
-            
-            setForeground(Color.WHITE);
-            
-            return this;
-        }
-    }
-    
-    // Award Button Editor
-    class AwardButtonEditor extends DefaultCellEditor {
-        private JButton button;
-        private String label;
-        private boolean isClicked;
-        private String sessionId;
-        private String sessionName;
-        
-        public AwardButtonEditor(JCheckBox checkBox, String sessionId, String sessionName) {
-            super(checkBox);
-            this.sessionId = sessionId;
-            this.sessionName = sessionName;
-            button = new JButton();
-            button.setOpaque(true);
-            button.addActionListener(e -> fireEditingStopped());
-        }
-        
-        public Component getTableCellEditorComponent(JTable table, Object value,
-                boolean isSelected, int row, int column) {
-            label = (value == null) ? "Nominate" : value.toString();
-            button.setText(label);
-            button.setBackground(new Color(80, 200, 140)); // Darker green when clicked
-            button.setForeground(Color.WHITE);
-            isClicked = true;
-            return button;
-        }
-        
-        public Object getCellEditorValue() {
-            if (isClicked) {
-                JTable table = (JTable) SwingUtilities.getAncestorOfClass(JTable.class, button);
-                if (table != null) {
-                    int row = table.getEditingRow();
-                    if (row >= 0) {
-                        String studentId = (String) table.getValueAt(row, 1);
-                        String studentName = (String) table.getValueAt(row, 2);
-                        
-                        // Show award selection dialog
-                        showAwardSelectionDialog(studentId, studentName, sessionId, sessionName, table, row);
-                    }
-                }
-            }
-            isClicked = false;
-            return label;
-        }
-    }
-    
-    private void showAwardSelectionDialog(String studentId, String studentName, 
-                                         String sessionId, String sessionName, 
-                                         JTable table, int row) {
-        // Create award selection dialog
-        JDialog awardDialog = new JDialog(this, "Select Award for " + studentName, true);
-        awardDialog.setSize(400, 250);
+    // --- DIALOG LOGIC ---
+    private void showAwardSelectionDialog(String studentId, String studentName, String sessionId, String sessionName) {
+        JDialog awardDialog = new JDialog(this, "Nominate Award", true);
+        awardDialog.setSize(400, 300);
         awardDialog.setLocationRelativeTo(this);
         awardDialog.setLayout(new BorderLayout(10, 10));
         
-        // Header
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        JLabel titleLabel = new JLabel("Select Award Type for:");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        headerPanel.add(titleLabel, BorderLayout.NORTH);
-        
-        JLabel studentLabel = new JLabel(studentName + " (" + studentId + ")");
-        studentLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        headerPanel.add(studentLabel, BorderLayout.CENTER);
-        
-        JLabel sessionLabel = new JLabel("Session: " + sessionName);
-        sessionLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        headerPanel.add(sessionLabel, BorderLayout.SOUTH);
-        
+        JPanel headerPanel = new JPanel(new GridLayout(3, 1));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        headerPanel.add(new JLabel("Student: " + studentName + " (" + studentId + ")"));
+        headerPanel.add(new JLabel("Session: " + sessionName));
+        headerPanel.add(new JLabel("Select Unique Award:"));
         
-        // Award options
-        JPanel awardPanel = new JPanel(new GridLayout(4, 1, 10, 10));
-        awardPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        JPanel awardPanel = new JPanel(new GridLayout(4, 1, 5, 5));
+        awardPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
         
-        ButtonGroup awardGroup = new ButtonGroup();
-        JRadioButton bestOralButton = new JRadioButton("Best Oral Presentation");
-        JRadioButton bestPosterButton = new JRadioButton("Best Poster Presentation");
-        JRadioButton peoplesChoiceButton = new JRadioButton("People's Choice Award");
+        ButtonGroup group = new ButtonGroup();
+        JRadioButton rb1 = new JRadioButton("Best Oral Presentation");
+        JRadioButton rb2 = new JRadioButton("Best Poster Presentation");
+        JRadioButton rb3 = new JRadioButton("People's Choice Award");
         
-        awardGroup.add(bestOralButton);
-        awardGroup.add(bestPosterButton);
-        awardGroup.add(peoplesChoiceButton);
+        String current = UserDatabase.getAwardForStudent(studentId, sessionId);
+        if("Best Oral Presentation".equals(current)) rb1.setSelected(true);
+        if("Best Poster Presentation".equals(current)) rb2.setSelected(true);
+        if("People's Choice Award".equals(current)) rb3.setSelected(true);
+
+        group.add(rb1); group.add(rb2); group.add(rb3);
+        awardPanel.add(rb1); awardPanel.add(rb2); awardPanel.add(rb3);
         
-        awardPanel.add(bestOralButton);
-        awardPanel.add(bestPosterButton);
-        awardPanel.add(peoplesChoiceButton);
-        
-        // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        JButton cancelButton = new JButton("Cancel");
-        JButton assignButton = new JButton("Assign Award");
-        
-        cancelButton.addActionListener(e -> awardDialog.dispose());
-        assignButton.addActionListener(e -> {
-            String selectedAward = null;
-            if (bestOralButton.isSelected()) {
-                selectedAward = "Best Oral Presentation";
-            } else if (bestPosterButton.isSelected()) {
-                selectedAward = "Best Poster Presentation";
-            } else if (peoplesChoiceButton.isSelected()) {
-                selectedAward = "People's Choice Award";
-            }
+        JButton btnSave = new JButton("Save Award");
+        btnSave.addActionListener(e -> {
+            String selected = null;
+            if(rb1.isSelected()) selected = "Best Oral Presentation";
+            else if(rb2.isSelected()) selected = "Best Poster Presentation";
+            else if(rb3.isSelected()) selected = "People's Choice Award";
             
-            if (selectedAward != null) {
-                // Save award
-                UserDatabase.saveAward(studentId, sessionId, selectedAward);
+            if(selected != null) {
+                Student currentHolder = UserDatabase.getStudentWithAward(sessionId, selected);
                 
-                // Update table
-                table.setValueAt("Already Awarded", row, 4);
-                table.setValueAt("Awarded", row, 5);
-                
-                JOptionPane.showMessageDialog(awardDialog,
-                    "Award assigned successfully!\n" +
-                    studentName + " received: " + selectedAward,
-                    "Award Assigned",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
+                if (currentHolder != null && !currentHolder.getStudentId().equals(studentId)) {
+                    int choice = JOptionPane.showConfirmDialog(awardDialog, 
+                        "The award '" + selected + "' is currently held by " + currentHolder.getName() + ".\n" +
+                        "Do you want to reassign it to " + studentName + "?",
+                        "Confirm Reassignment", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    
+                    if (choice != JOptionPane.YES_OPTION) return;
+                }
+
+                UserDatabase.saveAward(studentId, sessionId, selected);
+                showStudentListPanel(sessionId, sessionName); 
                 awardDialog.dispose();
-            } else {
-                JOptionPane.showMessageDialog(awardDialog,
-                    "Please select an award type.",
-                    "Selection Required",
-                    JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Award Updated!");
             }
         });
         
-        buttonPanel.add(cancelButton);
-        buttonPanel.add(assignButton);
-        
-        // Add components to dialog
         awardDialog.add(headerPanel, BorderLayout.NORTH);
         awardDialog.add(awardPanel, BorderLayout.CENTER);
-        awardDialog.add(buttonPanel, BorderLayout.SOUTH);
-        
+        awardDialog.add(btnSave, BorderLayout.SOUTH);
         awardDialog.setVisible(true);
+    }
+
+    // --- BUTTON CLASSES ---
+    class ButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
+        private String txt; public ButtonRenderer(String t){this.txt=t; setOpaque(true);}
+        public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c){
+            setText(txt); 
+            if (s) { setBackground(t.getSelectionBackground()); setForeground(t.getSelectionForeground()); }
+            else { setBackground(new Color(60, 120, 180)); setForeground(Color.WHITE); }
+            return this;
+        }
+    }
+    class ButtonEditor extends DefaultCellEditor {
+        private JButton b; private String l; private boolean clicked;
+        public ButtonEditor(JCheckBox c){ super(c); b=new JButton(); b.setOpaque(true); b.addActionListener(e->fireEditingStopped()); }
+        public Component getTableCellEditorComponent(JTable t, Object v, boolean s, int r, int c){
+            l=(v==null)?"View":v.toString(); b.setText(l); 
+            b.setBackground(new Color(80, 140, 200)); b.setForeground(Color.WHITE); clicked=true; return b;
+        }
+        public Object getCellEditorValue(){
+            if(clicked){ showStudentListPanel(seminarsTable.getValueAt(seminarsTable.getEditingRow(),0).toString(), seminarsTable.getValueAt(seminarsTable.getEditingRow(),1).toString()); }
+            clicked=false; return l;
+        }
+    }
+    class AwardButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
+        public AwardButtonRenderer() { setOpaque(true); }
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            if ("No students".equals(table.getValueAt(row, 2))) { JLabel empty = new JLabel(); empty.setOpaque(true); empty.setBackground(table.getBackground()); return empty; }
+            String awardStatus = (String) table.getValueAt(row, 5); 
+            if (!"No Award".equals(awardStatus)) { setText("Change"); setBackground(new Color(255, 165, 0)); } 
+            else { setText("Nominate"); setBackground(new Color(60, 180, 120)); }
+            setForeground(Color.WHITE); return this;
+        }
+    }
+    class AwardButtonEditor extends DefaultCellEditor {
+        private JButton button; private boolean isClicked; private String sessionId, sessionName;
+        public AwardButtonEditor(JCheckBox c, String sId, String sName) { super(c); this.sessionId=sId; this.sessionName=sName; button=new JButton(); button.setOpaque(true); button.addActionListener(e->fireEditingStopped()); }
+        public Component getTableCellEditorComponent(JTable t, Object v, boolean s, int r, int c) {
+            String stat = (String) t.getValueAt(r, 5);
+            button.setText(stat.equals("No Award")?"Nominate":"Change");
+            button.setBackground(stat.equals("No Award")?new Color(60, 180, 120):new Color(255, 165, 0));
+            button.setForeground(Color.WHITE); isClicked=true; return button;
+        }
+        public Object getCellEditorValue() {
+            if(isClicked) {
+                JTable t = (JTable) SwingUtilities.getAncestorOfClass(JTable.class, button);
+                if(t!=null) showAwardSelectionDialog((String)t.getValueAt(t.getEditingRow(),1), (String)t.getValueAt(t.getEditingRow(),2), sessionId, sessionName);
+            }
+            isClicked=false; return "Nominate";
+        }
     }
 }

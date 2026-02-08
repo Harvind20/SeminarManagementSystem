@@ -1,5 +1,5 @@
-E001|123|Dr. Wong Keng Tuck|AI & Data Science
-E002|123|Dr. Navaneethan|IoT & Networking
-E003|123|Mr. Khairil Amin|Cybersecurity
-E004|123|Dr. Nathar Shah|Software Engineering
-E005|123|Ms. Marfuiyah|Multimedia & AR/VR
+E001|123|Dr. Wong Keng Tuck|AI & Data Science|S1,S2
+E002|123|Dr. Navaneethan|IoT & Networking|S1
+E003|123|Mr. Khairil Amin|Cybersecurity|S1
+E004|123|Dr. Nathar Shah|Software Engineering|S2
+E005|123|Ms. Marfuiyah|Multimedia & AR/VR|S2

@@ -1,3 +1,3 @@
-S001|S5|Best Oral Presentation|Sat Feb 07 21:33:13 GMT+08:00 2026
-S001|S5|Best Poster Presentation|Sat Feb 07 21:33:18 GMT+08:00 2026
-S004|S4|Best Poster Presentation|Sat Feb 07 21:33:27 GMT+08:00 2026
+S004|S1|Best Oral Presentation|Sun Feb 08 16:20:51 MYT 2026
+S001|S1|People's Choice Award|Sun Feb 08 16:21:07 MYT 2026
+S003|S1|Best Poster Presentation|Sun Feb 08 16:22:01 MYT 2026

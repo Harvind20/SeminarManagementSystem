@@ -1,18 +1,6 @@
-S1|SuperSeminar|Poster Presentation|Software Eng. Track|2026-04-08|DTC Hall|10:00|15:00|30
-Schedule:0:null:E001&E002&E003,1:S004:E001&E002,2:S004:E001,3:S004:E004&E005,4:S004:E003&E004&E005,5:S007:null,6:S004:null,7:null:null,8:null:null,9:null:null,
+S1|Testttttt|Demo Session|Data Science Track|2026-02-08|DTC Hall|09:00:00.456|17:00|20
+Schedule:0:S001:E001&E002&E003,1:S002:E002&E003,2:S003:E001&E002&E003,3:S004:E001&E002&E003,4:null:null,5:null:null,6:null:null,7:null:null,8:null:null,9:null:null,10:null:null,11:null:null,12:null:null,13:null:null,14:null:null,15:null:null,16:null:null,17:null:null,18:null:null,19:null:null,20:null:null,21:null:null,22:null:null,
 ----
-2|New|Oral Presentation|AI Track|2026-02-06|DTC Hall|09:00:00.068|12:00:00.073|30
-Schedule:0:null:null,1:null:null,2:null:null,3:null:null,4:null:null,5:null:null,
-----
-S3|BestSeminar|Demo Session|Cybersecurity Track|2026-02-06|DTC Hall|09:00:00.349|12:00:00.354|30
-Schedule:0:null:null,1:null:null,2:null:null,3:null:null,4:null:null,5:null:null,
-----
-S3|AlrightSeminar|Poster Presentation|Data Science Track|2026-02-07|DTC Hall|09:00:00.008|12:00:00.012|20
-Schedule:0:null:null,1:null:null,2:null:null,3:S001:null,4:null:null,5:null:null,6:null:null,7:null:null,8:null:null,
-----
-S4|Seminar|Oral Presentation|AI Track|2026-02-07|DTC Hall|09:00:00.100|10:00|40
-Schedule:0:S005:null,
-----
-S5|Test|Oral Presentation|AI Track|2026-02-07|DTC Hall|09:00:00.630|12:00:00.631|20
-Schedule:0:S001:null,1:S001:null,2:null:null,3:S001:null,4:null:null,5:null:null,6:null:null,7:null:null,8:null:null,
+S2|ggggggg|Oral Presentation|AI Track|2026-02-08|DTC Hall|09:00:00.585|12:00:00.585|20
+Schedule:0:null:null,1:null:null,2:null:null,3:null:null,4:null:null,5:null:null,6:null:null,7:null:null,8:null:null,
 ----

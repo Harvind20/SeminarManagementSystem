@@ -1,7 +1,7 @@
-S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Oral Presentation|None|S5|None
-S002|123|Sanjeevan|None|None|None|None|None|None
-S003|123|Isaiah|None|None|None|None|None|None
-S004|123|Ajjay|1|1|1|Oral Presentation|None|S4|None
+S001|123|Harvind|THTHTHHT|Artificial Intelligence & Machine Learning|Dr. Nathar Shah|Poster Presentation|C:\Users\harvi\OneDrive - mmu.edu.my\Notes & Work\Degree\Degree 2.1\OOAD\Lab Project\Lab exercise.pdf|S1|BID-178
+S002|123|Sanjeevan|ttt|Internet of Things (IoT) & Smart Systems|Dr. Navaneethan|Poster Presentation|C:\Users\harvi\OneDrive - mmu.edu.my\Notes & Work\Degree\Degree 2.1\Computer Networks\Labs\Lab5-CSN6224-2530.pdf|S1|BID-995
+S003|123|Isaiah|hhgg|Internet of Things (IoT) & Smart Systems|Prof. Anwar Ibrahim|Poster Presentation|C:\Users\harvi\OneDrive - mmu.edu.my\Notes & Work\Degree\Degree 1.3\Integrity & Leadership\Coursework Specifications.pdf|S1|BID-388
+S004|123|Ajjay|hehe|Internet of Things (IoT) & Smart Systems|Dr. Navaneethan|Demo Session|C:\Users\harvi\OneDrive - mmu.edu.my\Notes & Work\Degree\Degree 1.2\Computer Architecture\Computer Architecture Lecture Plan.pdf|S1|BID-538
 S005|123|Thassveen|1|1|1|Oral Presentation|None|S4|1
 S006|123|Kashvin|None|None|None|None|None|None
 S007|123|Muthu|None|None|None|None|None|None
@@ -18,3 +18,4 @@ S017|123|Nava|None|None|None|None|None|None
 S018|123|Neethan|None|None|None|None|None|None
 S019|123|Wong|None|None|None|None|None|None
 S020|123|Goh|None|None|None|None|None|None
+S001|123|Harvind|gththdtjn|Artificial Intelligence|Dr. Navaneethan|Poster Presentation|C:\Users\harvi\OneDrive - mmu.edu.my\Notes & Work\Degree\Degree 2.1\Degree Y2S1 Bill.pdf|S2|BID-442
