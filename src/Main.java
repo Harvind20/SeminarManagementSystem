@@ -1,5 +1,4 @@
 import javax.swing.SwingUtilities;
-
 import misc.LoginFrame;
 
 public class Main {
