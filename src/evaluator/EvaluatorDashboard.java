@@ -1,6 +1,7 @@
 package evaluator;
 
 import java.awt.*;
+
 import java.util.List;
 import javax.swing.*;
 import javax.swing.table.*;
@@ -37,11 +38,13 @@ public class EvaluatorDashboard extends Dashboard {
     public EvaluatorDashboard(String userId) {
         super(userId, "Evaluator Dashboard");
         setSize(1000, 600);
+
         setLocationRelativeTo(null);
     }
 
     @Override
     protected void buildDashboard() {
+
         currentEvaluator = UserDatabase.getEvaluatorById(userId);
         if(currentEvaluator == null) {
             JOptionPane.showMessageDialog(this, "Error: Profile not found.");
@@ -307,6 +310,8 @@ public class EvaluatorDashboard extends Dashboard {
             });
             return b;
         }
+
         public Object getCellEditorValue() { return label; }
     }
 }
+
