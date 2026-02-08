@@ -35,7 +35,7 @@ public class LoginFrame extends JFrame {
         password.setMaximumSize(password.getPreferredSize());
         role.setMaximumSize(role.getPreferredSize());
 
-        setTitle("FCSIT Seminar System - Login");
+        setTitle("Seminar System - Login");
         setSize(400, 300);
         setLayout(new GridLayout(2, 1));
         setLocationRelativeTo(null);
