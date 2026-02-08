@@ -1,11 +1,11 @@
-S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Oral Presentation|None|S5|None
+S001|123|Harvind|ABCDEFG|Software Engineering|Dr.Nathar Shah|Oral Presentation|None|S5|None|None
 S002|123|Sanjeevan|None|None|None|None|None|None
 S003|123|Isaiah|None|None|None|None|None|None
-S004|123|Ajjay|1|1|1|Oral Presentation|None|S4|None
-S005|123|Thassveen|1|1|1|Oral Presentation|None|S4|1
-S006|123|Kashvin|None|None|None|None|None|None
-S007|123|Muthu|None|None|None|None|None|None
-S008|123|Mani|None|None|None|None|None|None
+S004|123|Ajjay|1|1|1|Oral Presentation|None|S5|1|E001|09:40 - 10:00
+S005|123|Thassveen|1|1|1|Oral Presentation|None|S4|1|E001|09:00 - 09:40
+S006|123|Kashvin|1|1|1|Oral Presentation|None|S5|1|E001|09:00 - 09:20
+S007|123|Muthu|1|1|1|Oral Presentation|None|S5|1|E001|09:20 - 09:40
+S008|123|Mani|1|1|1|Oral Presentation|None|S5|1|E001|11:40 - 12:00
 S009|123|George|None|None|None|None|None|None
 S010|123|Felix|None|None|None|None|None|None
 S011|123|Rames|None|None|None|None|None|None
